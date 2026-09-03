@@ -6,10 +6,10 @@ Prospect. See [CLAUDE.md](CLAUDE.md) for how the application itself works.
 
 Two things run in production:
 
-| Part | Served by | Where |
-|---|---|---|
-| The page (`dist/`) | nginx, directly | `/srv/reach-calculator/dist` |
-| `POST /api/lead` | Node, behind an nginx proxy | `127.0.0.1:8787`, managed by PM2 |
+| Part               | Served by                   | Where                            |
+| ------------------ | --------------------------- | -------------------------------- |
+| The page (`dist/`) | nginx, directly             | `/srv/reach-calculator/dist`     |
+| `POST /api/lead`   | Node, behind an nginx proxy | `127.0.0.1:8787`, managed by PM2 |
 
 The Node service exists so the Pardot Form Handler URL never reaches the browser.
 It binds to loopback only — nginx is the sole route in.
@@ -45,7 +45,7 @@ It binds to loopback only — nginx is the sole route in.
 > alternative, if you would rather have full (non-LTS) support, is Ubuntu 24.04 LTS,
 > which Lightsail does offer and which supports everything below unchanged.
 
-**Attach a static IP** — Networking → *Create static IP* → attach to the instance.
+**Attach a static IP** — Networking → _Create static IP_ → attach to the instance.
 
 Do this **before** setting up DNS. An instance's default public IP changes when it is
 stopped and started, which would silently break the subdomain. A static IP is free
@@ -53,11 +53,11 @@ while attached to a running instance, and billed only if you leave it unattached
 
 **Firewall** — Networking → IPv4 Firewall. You want exactly:
 
-| Application | Protocol | Port | Restricted to |
-|---|---|---|---|
-| SSH | TCP | 22 | your IP, if you have a fixed one |
-| HTTP | TCP | 80 | anywhere |
-| HTTPS | TCP | 443 | anywhere |
+| Application | Protocol | Port | Restricted to                    |
+| ----------- | -------- | ---- | -------------------------------- |
+| SSH         | TCP      | 22   | your IP, if you have a fixed one |
+| HTTP        | TCP      | 80   | anywhere                         |
+| HTTPS       | TCP      | 443  | anywhere                         |
 
 **Never open 8787.** The lead endpoint binds to `127.0.0.1`, so it is unreachable from
 outside regardless, but leaving the port closed keeps that true even if someone later
@@ -76,9 +76,9 @@ the logs, but recreating the TLS and nginx setup by hand is an afternoon.
 Ask the client for a subdomain, e.g. `calculator.reach.security`, and have whoever
 controls DNS for `reach.security` add **one record**:
 
-| Type | Name | Value | TTL |
-|---|---|---|---|
-| A | `calculator` | the Lightsail static IP | 300 |
+| Type | Name         | Value                   | TTL |
+| ---- | ------------ | ----------------------- | --- |
+| A    | `calculator` | the Lightsail static IP | 300 |
 
 Add an `AAAA` record to the instance's IPv6 address only if you enabled IPv6.
 
@@ -158,7 +158,7 @@ system and is never in git:
 
 ```sh
 cat > /srv/reach-calculator/.env <<'EOF'
-PARDOT_FORM_HANDLER_URL=https://go.reach.security/l/1119553/2026-08-31/5vsvpy
+PARDOT_FORM_HANDLER_URL=
 PARDOT_SUCCESS_URL=
 PARDOT_ERROR_URL=
 
@@ -177,7 +177,7 @@ chmod 600 /srv/reach-calculator/.env
   Handler and gives you the real values. A wrong value is worse than none — delivery
   would be judged against a URL Pardot never redirects to. Handler 1119553 currently
   answers `200` inline and does not redirect at all.
-- **Leave the CAPTCHA pair blank.** The check runs only when *both* are set, and the
+- **Leave the CAPTCHA pair blank.** The check runs only when _both_ are set, and the
   browser does not yet render a widget, so enabling it now would refuse every lead.
 
 ---
@@ -349,12 +349,12 @@ immediately.
 
 ## Troubleshooting
 
-| Symptom | Cause |
-|---|---|
-| 502 from `/api/lead` | Node is down — `pm2 status`, `pm2 logs reach-calculator` |
-| `not_configured` in the logs | `PARDOT_FORM_HANDLER_URL` empty; check `.env` is where `node_args` points |
-| 429 on submit | nginx rate limit; expected under load testing, not for real visitors |
-| `unexpected_redirect_*` | `PARDOT_SUCCESS_URL` does not match where the handler actually redirects — blank it |
-| Every lead 403s | Both CAPTCHA variables set but no widget sends a token; blank them |
-| Page loads, form does nothing | Check the browser console against the CSP in the nginx config |
-| Certbot fails | DNS not propagated (`dig +short <subdomain>` must show the static IP), or `server_name` does not match the `-d` argument |
+| Symptom                       | Cause                                                                                                                    |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| 502 from `/api/lead`          | Node is down — `pm2 status`, `pm2 logs reach-calculator`                                                                 |
+| `not_configured` in the logs  | `PARDOT_FORM_HANDLER_URL` empty; check `.env` is where `node_args` points                                                |
+| 429 on submit                 | nginx rate limit; expected under load testing, not for real visitors                                                     |
+| `unexpected_redirect_*`       | `PARDOT_SUCCESS_URL` does not match where the handler actually redirects — blank it                                      |
+| Every lead 403s               | Both CAPTCHA variables set but no widget sends a token; blank them                                                       |
+| Page loads, form does nothing | Check the browser console against the CSP in the nginx config                                                            |
+| Certbot fails                 | DNS not propagated (`dig +short <subdomain>` must show the static IP), or `server_name` does not match the `-d` argument |
