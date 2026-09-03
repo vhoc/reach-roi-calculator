@@ -1,0 +1,7 @@
+allowBuilds:
+  core-js: set this to true or false
+# No dependency here needs to run install scripts (core-js, a transitive jspdf
+# dep, only prints a funding notice). Declaring the empty allowlist makes that a
+# recorded decision rather than a warning, and keeps one supply-chain foothold
+# closed: a compromised release cannot execute on install.
+onlyBuiltDependencies: []

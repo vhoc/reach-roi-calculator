@@ -1,0 +1,1409 @@
+/* ============================================================================
+   Reach Impact Calculator -- styles
+   ----------------------------------------------------------------------------
+   Every selector is scoped under .reach-roi-calculator so this stylesheet
+   cannot leak into, or be affected by, the rest of a host page (e.g. a
+   Webflow site). Tokens are declared as CSS variables on the root class so
+   they're easy to retune without hunting through the file.
+   ========================================================================== */
+
+.reach-roi-calculator {
+  /* -- Color tokens (Reach light / monochromatic brand) --------------- */
+  --rrc-bg: #FAF9F5;              /* warm off-white page background */
+  --rrc-surface: #FFFFFF;         /* cards */
+  --rrc-surface-2: #F4F2EC;       /* insets / subtle fills */
+  --rrc-border: #E2DFD6;          /* card + input borders */
+  --rrc-border-soft: #ECEAE3;     /* hairlines */
+  --rrc-text-primary: #201F1C;    /* near-black (from reach.security) */
+  --rrc-text-secondary: #6B6A64;  /* body grey */
+  --rrc-text-tertiary: #AAA8A0;   /* muted grey (from reach.security) */
+  --rrc-ink: #201F1C;             /* black used for primary buttons */
+
+  /* Pastel / off-color accents (from the site's isometric graphics) */
+  --rrc-accent: #201F1C;          /* primary emphasis = ink, per brand */
+  --rrc-accent-strong: #201F1C;
+  --rrc-accent-soft: #EFEDE6;
+  --rrc-green: #62E2A3;           /* signature soft green */
+  --rrc-green-soft: #62E2A31F;
+  --rrc-coral: #FF847B;           /* breach/coral */
+  --rrc-coral-soft: #FF847B1F;
+  --rrc-purple: #B0B6E4;          /* muted periwinkle */
+  --rrc-purple-soft: #B0B6E41F;
+  --rrc-orange: #FF9F5A;          /* warm orange */
+  --rrc-orange-soft: #FF9F5A1F;
+
+  /* Back-compat aliases so existing rules keep working with new hues */
+  --rrc-resiliency: #62E2A3;
+  --rrc-resiliency-soft: #62E2A31F;
+  --rrc-gold: #C98A2B;
+  --rrc-gold-soft: #C98A2B1F;
+  --rrc-danger: #FF847B;
+
+  --rrc-radius-lg: 18px;
+  --rrc-radius-md: 14px;
+  --rrc-radius-sm: 10px;
+  --rrc-font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif;
+  --rrc-font-mono: "Inter", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  font-family: var(--rrc-font);
+  color: var(--rrc-text-primary);
+  background-color: var(--rrc-bg);
+  border-radius: var(--rrc-radius-lg);
+  padding: clamp(20px, 3vw, 44px);
+  box-sizing: border-box;
+  line-height: 1.5;
+  position: relative;
+  isolation: isolate;
+  -webkit-font-smoothing: antialiased;
+  border: 1px solid var(--rrc-border-soft);
+}
+
+/* Decorative side illustrations (Reach brand line-art), two per side, stacked
+   vertically with space between. All four are transparent PNGs (background and
+   grid knocked out) so they read as faint vector art on the grey page. Layout:
+     top-left  = ::before             (accordion 01)
+     top-right = ::after              (accordion 02)
+     bot-left  = .reach-roi-side--bl  (accordion 03)
+     bot-right = .reach-roi-side--br  (accordion 04)
+   Each box uses aspect-ratio 1040/800 with background-size: contain, so the
+   images are never warped. Inner edges tuck behind the centered content
+   column (z-index 1). Hidden on narrow screens with no gutter room. */
+.reach-roi-calculator::before,
+.reach-roi-calculator::after,
+.reach-roi-side {
+  content: "";
+  position: absolute;
+  width: 30%;
+  max-width: 480px;
+  aspect-ratio: 1040 / 800;
+  background-repeat: no-repeat;
+  background-size: contain;
+  opacity: 0.5;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* The bottom-pair layers are real elements; ensure they render as boxes. */
+.reach-roi-side {
+  display: block;
+}
+
+/* Top-left (01) */
+.reach-roi-calculator::before {
+  top: 300px;
+  left: max(12px, calc(25% - 470px));
+  background-position: left top;
+  background-image: url("./assets/art-top-left.png");
+}
+
+/* Top-right (02) */
+.reach-roi-calculator::after {
+  top: 300px;
+  right: max(12px, calc(25% - 470px));
+  background-position: right top;
+  background-image: url("./assets/art-top-right.png");
+}
+
+/* Bottom-left (03) */
+.reach-roi-side--bl {
+  top: 660px;
+  left: max(12px, calc(25% - 470px));
+  background-position: left top;
+  background-image: url("./assets/art-bottom-left.png");
+}
+
+/* Bottom-right (04) */
+.reach-roi-side--br {
+  top: 660px;
+  right: max(12px, calc(25% - 470px));
+  background-position: right top;
+  background-image: url("./assets/art-bottom-right.png");
+}
+
+/* Hide the side graphics when there is not enough room for gutters */
+@media (max-width: 1180px) {
+  .reach-roi-calculator::before,
+  .reach-roi-calculator::after,
+  .reach-roi-side {
+    display: none;
+  }
+}
+
+.reach-roi-calculator * {
+  box-sizing: border-box;
+}
+
+.reach-roi-calculator .reach-roi-is-hidden {
+  display: none !important;
+}
+
+/* -- Header banner "blade" ------------------------------------------------
+   The header breaks out of the calculator's own padding with negative margins
+   so it reads as a full-width band, then re-ints its own padding. Its inner
+   wrapper is capped at the same max-width as .reach-roi-content, so the title
+   and intro line up with the input cards below. */
+.reach-roi-calculator .reach-roi-header {
+  margin: 0 0 32px;
+  padding: clamp(20px, 4vw, 44px) 0 clamp(24px, 3vw, 36px);
+  background: transparent;
+  border-bottom: 1px solid var(--rrc-border);
+  position: relative;
+}
+
+/* Subtle accent hairline along the bottom of the header */
+.reach-roi-calculator .reach-roi-header::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  width: 64px;
+  bottom: -1px;
+  height: 2px;
+  background: var(--rrc-green);
+}
+
+.reach-roi-calculator .reach-roi-header-inner {
+  max-width: 920px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+}
+
+.reach-roi-calculator .reach-roi-header-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.reach-roi-calculator .reach-roi-title {
+  font-size: clamp(28px, 3.6vw, 42px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin: 0 0 14px;
+  color: var(--rrc-text-primary);
+}
+
+.reach-roi-calculator .reach-roi-subtitle {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--rrc-text-secondary);
+  margin: 0 0 12px;
+  max-width: 640px;
+}
+
+.reach-roi-calculator .reach-roi-subtitle:last-child {
+  margin-bottom: 0;
+}
+
+.reach-roi-calculator .reach-roi-header-logo {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.reach-roi-calculator .reach-roi-logo {
+  width: clamp(120px, 14vw, 168px);
+  height: auto;
+  color: var(--rrc-text-primary);
+  display: block;
+}
+
+@media (max-width: 640px) {
+  .reach-roi-calculator .reach-roi-header-inner {
+    flex-direction: column-reverse;
+    align-items: flex-start;
+    gap: 20px;
+  }
+  .reach-roi-calculator .reach-roi-logo {
+    width: 120px;
+  }
+}
+
+/* -- Layout ------------------------------------------------------------ */
+.reach-roi-calculator .reach-roi-content {
+  max-width: 920px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+/* Each "screen" (inputs, then results) fills the content area. Only one
+   is visible at a time -- see .reach-roi-is-hidden -- which is what lets
+   this feel like a page transition without an actual page load. */
+.reach-roi-calculator .reach-roi-view {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: reach-roi-fade-in 0.4s ease;
+}
+
+@keyframes reach-roi-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reach-roi-calculator .reach-roi-view {
+    animation: none;
+  }
+}
+
+.reach-roi-calculator .reach-roi-view:focus-visible {
+  outline: none;
+}
+
+/* Two input cards (Operating / Resiliency) side by side on wider screens */
+.reach-roi-calculator .reach-roi-input-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 800px) {
+  .reach-roi-calculator .reach-roi-input-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* -- Submit / back controls ---------------------------------------------- */
+.reach-roi-calculator .reach-roi-submit-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 28px 0 4px;
+  text-align: center;
+}
+
+.reach-roi-calculator .reach-roi-submit-btn {
+  appearance: none;
+  border: none;
+  cursor: pointer;
+  background: var(--rrc-ink);
+  color: #FFFFFF;
+  font-family: var(--rrc-font);
+  font-size: 15.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding: 15px 38px;
+  border-radius: 999px;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.reach-roi-calculator .reach-roi-submit-btn:hover {
+  transform: translateY(-1px);
+  background: #000000;
+}
+
+.reach-roi-calculator .reach-roi-submit-btn:focus-visible {
+  outline: 2px solid var(--rrc-ink);
+  outline-offset: 3px;
+}
+
+.reach-roi-calculator .reach-roi-submit-help {
+  font-size: 12.5px;
+  color: var(--rrc-text-tertiary);
+  margin: 0;
+}
+
+.reach-roi-calculator .reach-roi-back-btn {
+  appearance: none;
+  align-self: flex-start;
+  background: transparent;
+  border: 1px solid var(--rrc-border);
+  color: var(--rrc-text-secondary);
+  font-family: var(--rrc-font);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.reach-roi-calculator .reach-roi-back-btn:hover {
+  border-color: var(--rrc-accent);
+  color: var(--rrc-text-primary);
+}
+
+.reach-roi-calculator .reach-roi-back-btn:focus-visible {
+  outline: 2px solid var(--rrc-accent-strong);
+  outline-offset: 2px;
+}
+
+/* -- Cards --------------------------------------------------------------- */
+.reach-roi-calculator .reach-roi-card {
+  background: var(--rrc-surface);
+  border: 1px solid var(--rrc-border);
+  border-radius: var(--rrc-radius-md);
+  padding: 22px;
+  box-shadow: 0 1px 2px rgba(32, 31, 28, 0.04), 0 8px 24px -18px rgba(32, 31, 28, 0.12);
+}
+
+.reach-roi-calculator .reach-roi-card-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+
+.reach-roi-calculator .reach-roi-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--rrc-text-secondary);
+  margin: 0;
+}
+
+.reach-roi-calculator .reach-roi-card-title--operating {
+  color: var(--rrc-text-primary);
+}
+
+/* -- Fields ---------------------------------------------------------------- */
+.reach-roi-calculator .reach-roi-field {
+  margin-bottom: 18px;
+}
+
+.reach-roi-calculator .reach-roi-field:last-child {
+  margin-bottom: 0;
+}
+
+.reach-roi-calculator .reach-roi-field-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.reach-roi-calculator .reach-roi-label {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--rrc-text-primary);
+}
+
+.reach-roi-calculator .reach-roi-value-pill {
+  font-family: var(--rrc-font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--rrc-text-primary);
+  background: var(--rrc-surface-2);
+  border: 1px solid var(--rrc-border);
+  border-radius: 999px;
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+
+.reach-roi-calculator .reach-roi-help {
+  font-size: 12.5px;
+  color: var(--rrc-text-tertiary);
+  margin: 6px 0 0;
+  line-height: 1.45;
+}
+
+/* Typical/median value hint shown next to Section A inputs */
+.reach-roi-calculator .reach-roi-typical {
+  display: inline-block;
+  margin-left: 4px;
+  font-weight: 600;
+  color: var(--rrc-text-secondary);
+  border-left: 1px solid var(--rrc-border);
+  padding-left: 8px;
+}
+
+/* Dynamic minimum note under the Time Allocation slider. Shown only when the
+   number of selected tasks raises the slider's minimum above the absolute
+   floor. Subtle but a touch more prominent than the help text. */
+.reach-roi-calculator .reach-roi-min-note {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--rrc-text-secondary);
+  margin: 6px 0 0;
+  line-height: 1.45;
+}
+
+/* -- Sliders --------------------------------------------------------------- */
+.reach-roi-calculator .reach-roi-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--rrc-border);
+  outline: none;
+  cursor: pointer;
+}
+
+.reach-roi-calculator .reach-roi-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--rrc-ink);
+  border: 3px solid var(--rrc-surface);
+  box-shadow: 0 0 0 1px var(--rrc-border);
+  cursor: pointer;
+  margin-top: -1px;
+}
+
+.reach-roi-calculator .reach-roi-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--rrc-ink);
+  border: 3px solid var(--rrc-surface);
+  box-shadow: 0 0 0 1px var(--rrc-border);
+  cursor: pointer;
+}
+
+.reach-roi-calculator .reach-roi-slider:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px var(--rrc-green);
+}
+
+.reach-roi-calculator .reach-roi-slider-scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--rrc-text-tertiary);
+  margin-top: 6px;
+}
+
+.reach-roi-calculator .reach-roi-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
+.reach-roi-calculator .reach-roi-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.reach-roi-calculator .reach-roi-switch-track {
+  position: absolute;
+  inset: 0;
+  background: var(--rrc-border);
+  border-radius: 999px;
+  transition: background 0.15s ease;
+}
+
+.reach-roi-calculator .reach-roi-switch-track::before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 20px;
+  height: 20px;
+  background: #FFFFFF;
+  box-shadow: 0 1px 2px rgba(32, 31, 28, 0.2);
+  border-radius: 50%;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.reach-roi-calculator .reach-roi-switch input:checked + .reach-roi-switch-track {
+  background: var(--rrc-ink);
+}
+
+.reach-roi-calculator .reach-roi-switch input:checked + .reach-roi-switch-track::before {
+  transform: translateX(18px);
+  background: #ffffff;
+}
+
+.reach-roi-calculator .reach-roi-switch input:focus-visible + .reach-roi-switch-track {
+  box-shadow: 0 0 0 3px var(--rrc-accent-soft);
+}
+
+/* -- Disclaimer ------------------------------------------------------------------- */
+.reach-roi-calculator .reach-roi-disclaimer {
+  font-size: 12px;
+  color: var(--rrc-text-tertiary);
+  margin-top: 18px;
+  line-height: 1.5;
+  border-top: 1px solid var(--rrc-border-soft);
+  padding-top: 14px;
+}
+
+/* ============================================================================
+   RESULTS PANEL
+   ========================================================================== */
+
+/* Section C summary - hero cards grid */
+.reach-roi-calculator .reach-roi-summary-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 720px) {
+  .reach-roi-calculator .reach-roi-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Primary hero: total dollar value (the headline). A solid ink panel gives
+   the results one bold focal point, echoing the site's dark accent panels. */
+.reach-roi-calculator .reach-roi-meter-card {
+  background: var(--rrc-ink);
+  border: 1px solid var(--rrc-ink);
+  border-radius: var(--rrc-radius-md);
+  padding: 24px;
+}
+
+.reach-roi-calculator .reach-roi-hero-primary {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.reach-roi-calculator .reach-roi-total-label {
+  font-size: 12.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  color: var(--rrc-text-tertiary);
+  margin: 0 0 6px;
+}
+
+.reach-roi-calculator .reach-roi-total-value {
+  font-size: clamp(32px, 4.2vw, 44px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #FFFFFF;
+  margin: 0;
+  font-family: var(--rrc-font-mono);
+}
+
+/* Secondary hero cards: hours + task count */
+.reach-roi-calculator .reach-roi-hero-secondary {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.reach-roi-calculator .reach-roi-hero-number {
+  font-size: clamp(26px, 3.2vw, 34px);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--rrc-accent-strong);
+  font-family: var(--rrc-font-mono);
+  margin: 0;
+}
+
+.reach-roi-calculator .reach-roi-hero-sub {
+  font-size: 12px;
+  color: var(--rrc-text-tertiary);
+  margin: 4px 0 0;
+}
+
+/* ---- Section B: task list (inputs view) ---- */
+.reach-roi-calculator .reach-roi-task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reach-roi-calculator .reach-roi-task-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 14px 16px;
+  background: var(--rrc-surface-2);
+  border: 1px solid var(--rrc-border-soft);
+  border-radius: var(--rrc-radius-sm);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.reach-roi-calculator .reach-roi-task-row.reach-roi-is-active-task {
+  border-color: var(--rrc-green);
+  background: var(--rrc-green-soft);
+}
+
+@media (max-width: 620px) {
+  .reach-roi-calculator .reach-roi-task-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .reach-roi-calculator .reach-roi-task-meta {
+    justify-content: space-between;
+  }
+}
+
+.reach-roi-calculator .reach-roi-task-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.reach-roi-calculator .reach-roi-task-labels {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.reach-roi-calculator .reach-roi-task-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--rrc-text-primary);
+}
+
+.reach-roi-calculator .reach-roi-task-state {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--rrc-text-tertiary);
+  white-space: nowrap;
+}
+
+.reach-roi-calculator .reach-roi-task-row.reach-roi-is-active-task .reach-roi-task-state {
+  color: var(--rrc-accent-strong);
+}
+
+/* Category tag */
+.reach-roi-calculator .reach-roi-cat-tag {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  width: fit-content;
+}
+
+.reach-roi-calculator .reach-roi-cat-tag--prevent {
+  background: var(--rrc-purple-soft);
+  color: #5560B0;
+}
+
+.reach-roi-calculator .reach-roi-cat-tag--detect {
+  background: var(--rrc-green-soft);
+  color: #1F9E6E;
+}
+
+.reach-roi-calculator .reach-roi-cat-tag--respond {
+  background: var(--rrc-orange-soft);
+  color: #C56A1E;
+}
+
+/* Right-hand meta on each task row: the Included/Excluded state label */
+.reach-roi-calculator .reach-roi-task-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* Small toggle switch variant */
+.reach-roi-calculator .reach-roi-switch--sm {
+  width: 38px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.reach-roi-calculator .reach-roi-switch--sm .reach-roi-switch-track::before {
+  width: 16px;
+  height: 16px;
+}
+
+.reach-roi-calculator .reach-roi-switch--sm input:checked + .reach-roi-switch-track::before {
+  transform: translateX(16px);
+}
+
+/* ---- Included tasks results table ---- */
+.reach-roi-calculator .reach-roi-task-results {
+  display: flex;
+  flex-direction: column;
+}
+
+.reach-roi-calculator .reach-roi-task-result-row {
+  display: grid;
+  grid-template-columns: 1.8fr 0.9fr 1.2fr 1.2fr;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--rrc-border-soft);
+}
+
+.reach-roi-calculator .reach-roi-task-result-row:last-child {
+  border-bottom: none;
+}
+
+.reach-roi-calculator .reach-roi-task-result-row--head {
+  border-bottom: 1px solid var(--rrc-border);
+  padding-bottom: 10px;
+}
+
+.reach-roi-calculator .reach-roi-task-result-row--head span {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  color: var(--rrc-text-tertiary);
+}
+
+.reach-roi-calculator .reach-roi-task-result-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--rrc-text-primary);
+}
+
+.reach-roi-calculator .reach-roi-task-result-num {
+  font-size: 14px;
+  font-family: var(--rrc-font-mono);
+  color: var(--rrc-text-secondary);
+  text-align: right;
+}
+
+.reach-roi-calculator .reach-roi-task-result-num--dollar {
+  color: var(--rrc-accent-strong);
+  font-weight: 600;
+}
+
+@media (max-width: 620px) {
+  .reach-roi-calculator .reach-roi-task-result-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 12px;
+  }
+  .reach-roi-calculator .reach-roi-task-result-row--head {
+    display: none;
+  }
+  .reach-roi-calculator .reach-roi-task-result-name {
+    grid-column: 1 / -1;
+  }
+  .reach-roi-calculator .reach-roi-task-result-cat {
+    grid-column: 1 / -1;
+  }
+  .reach-roi-calculator .reach-roi-task-result-num {
+    text-align: left;
+  }
+}
+
+.reach-roi-calculator .reach-roi-empty-tasks {
+  font-size: 13.5px;
+  color: var(--rrc-text-secondary);
+  margin: 0;
+  padding: 8px 0;
+}
+
+/* -- Summary paragraph -------------------------------------------------------------- */
+.reach-roi-calculator .reach-roi-summary-card {
+  background: var(--rrc-surface);
+  border: 1px solid var(--rrc-border-soft);
+  border-radius: var(--rrc-radius-md);
+  padding: 20px 22px;
+}
+
+.reach-roi-calculator .reach-roi-summary-text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--rrc-text-primary);
+  margin: 0;
+}
+
+/* -- Estimate badge ------------------------------------------------------------------ */
+.reach-roi-calculator .reach-roi-estimate-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+.reach-roi-calculator .reach-roi-estimate-tag::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--rrc-green);
+}
+
+/* -- Next Steps CTA buttons (results page) --------------------------------- */
+.reach-roi-calculator .reach-roi-next-steps-buttons {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+}
+.reach-roi-calculator .reach-roi-next-steps-buttons .reach-roi-cta-btn {
+  flex: 0 1 260px;
+}
+
+@media (max-width: 620px) {
+  .reach-roi-calculator .reach-roi-next-steps-buttons {
+    grid-template-columns: 1fr;
+  }
+}
+
+.reach-roi-calculator .reach-roi-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  font-family: var(--rrc-font);
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding: 14px 20px;
+  border-radius: 999px;
+  border: 1px solid var(--rrc-border);
+  background: var(--rrc-surface);
+  color: var(--rrc-text-primary);
+  transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.reach-roi-calculator .reach-roi-cta-btn:hover {
+  transform: translateY(-1px);
+  border-color: var(--rrc-text-tertiary);
+  background: var(--rrc-surface-2);
+}
+
+.reach-roi-calculator .reach-roi-cta-btn:focus-visible {
+  outline: 2px solid var(--rrc-ink);
+  outline-offset: 3px;
+}
+
+/* Primary CTA (Request a Demo) is a solid black pill, matching the site */
+.reach-roi-calculator .reach-roi-cta-btn--primary {
+  background: var(--rrc-ink);
+  color: #FFFFFF;
+  font-weight: 600;
+  border-color: var(--rrc-ink);
+}
+
+.reach-roi-calculator .reach-roi-cta-btn--primary:hover {
+  border-color: #000000;
+  background: #000000;
+}
+
+/* ============================================================================
+   DONUT CHART (results page)
+   ========================================================================== */
+.reach-roi-calculator .reach-roi-donut-wrap {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+@media (max-width: 640px) {
+  .reach-roi-calculator .reach-roi-donut-wrap {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+.reach-roi-calculator .reach-roi-donut-figure {
+  position: relative;
+  flex-shrink: 0;
+  width: 240px;
+  height: 240px;
+}
+
+.reach-roi-calculator .reach-roi-donut {
+  width: 240px;
+  height: 240px;
+  display: block;
+}
+
+.reach-roi-calculator .reach-roi-donut-center-value {
+  fill: var(--rrc-text-primary);
+  font-family: var(--rrc-font-mono);
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.reach-roi-calculator .reach-roi-donut-center-label {
+  fill: var(--rrc-text-tertiary);
+  font-family: var(--rrc-font);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.reach-roi-calculator .reach-roi-donut-seg {
+  transition: opacity 0.15s ease;
+}
+
+/* Tooltip that follows the cursor over donut segments */
+.reach-roi-calculator .reach-roi-donut-tooltip {
+  position: absolute;
+  transform: translate(-50%, -130%);
+  background: var(--rrc-ink);
+  border: 1px solid var(--rrc-ink);
+  color: #FFFFFF;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 5;
+  box-shadow: 0 6px 18px -6px rgba(32, 31, 28, 0.25);
+}
+
+.reach-roi-calculator .reach-roi-donut-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.reach-roi-calculator .reach-roi-donut-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.reach-roi-calculator .reach-roi-donut-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.reach-roi-calculator .reach-roi-donut-legend-name {
+  color: var(--rrc-text-secondary);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reach-roi-calculator .reach-roi-donut-legend-val {
+  color: var(--rrc-text-primary);
+  font-family: var(--rrc-font-mono);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ============================================================================
+   DOWNLOAD BUTTON + GATED MODAL FORM
+   ========================================================================== */
+.reach-roi-calculator .reach-roi-cta-btn--download {
+  width: 100%;
+  margin-bottom: 12px;
+  border: 1px solid var(--rrc-resiliency);
+  background: transparent;
+  color: var(--rrc-resiliency);
+  font-weight: 700;
+}
+
+.reach-roi-calculator .reach-roi-cta-btn--download:hover {
+  background: var(--rrc-resiliency-soft);
+  border-color: var(--rrc-resiliency);
+  transform: translateY(-1px);
+}
+
+.reach-roi-calculator .reach-roi-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(32, 31, 28, 0.55);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 1000;
+}
+
+.reach-roi-calculator .reach-roi-modal {
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+  max-height: 92vh;
+  overflow-y: auto;
+  background: var(--rrc-surface);
+  border: 1px solid var(--rrc-border);
+  border-radius: var(--rrc-radius-lg);
+  padding: 28px;
+  box-shadow: 0 24px 60px -20px rgba(32, 31, 28, 0.35);
+}
+
+.reach-roi-calculator .reach-roi-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  background: transparent;
+  border: none;
+  color: var(--rrc-text-tertiary);
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.reach-roi-calculator .reach-roi-modal-close:hover {
+  color: var(--rrc-text-primary);
+}
+
+.reach-roi-calculator .reach-roi-modal-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--rrc-text-primary);
+  margin: 0 0 8px;
+}
+
+.reach-roi-calculator .reach-roi-modal-sub {
+  font-size: 13.5px;
+  color: var(--rrc-text-secondary);
+  line-height: 1.5;
+  margin: 0 0 20px;
+}
+
+.reach-roi-calculator .reach-roi-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.reach-roi-calculator .reach-roi-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 460px) {
+  .reach-roi-calculator .reach-roi-form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.reach-roi-calculator .reach-roi-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.reach-roi-calculator .reach-roi-form-label {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--rrc-text-secondary);
+}
+
+.reach-roi-calculator .reach-roi-req {
+  color: var(--rrc-accent-strong);
+  margin-left: 2px;
+}
+
+.reach-roi-calculator .reach-roi-form-input {
+  width: 100%;
+  background: var(--rrc-surface-2);
+  border: 1px solid var(--rrc-border);
+  color: var(--rrc-text-primary);
+  border-radius: var(--rrc-radius-sm);
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: var(--rrc-font);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.reach-roi-calculator .reach-roi-form-input:focus {
+  outline: none;
+  border-color: var(--rrc-accent);
+  box-shadow: 0 0 0 3px var(--rrc-accent-soft);
+}
+
+.reach-roi-calculator .reach-roi-form-error {
+  font-size: 12.5px;
+  color: #ffb4a8;
+  margin: 0;
+}
+
+.reach-roi-calculator .reach-roi-form-submit {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.reach-roi-calculator .reach-roi-form-privacy {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--rrc-text-tertiary);
+  margin: 0;
+}
+
+.reach-roi-calculator .reach-roi-form-privacy a {
+  color: var(--rrc-text-secondary);
+  text-decoration: underline;
+}
+
+/* ==========================================================================
+   Reach Value Assessment - new-model components (number inputs, task cards
+   with descriptions + reduction badges + Customize panels, four-metric
+   results grid, methodology card, capacity warning). All scoped under
+   .reach-roi-calculator and using the existing brand tokens.
+   ========================================================================== */
+
+/* -- Number inputs (replace the old sliders for headcount + salary) -------- */
+.reach-roi-calculator .reach-roi-num-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.reach-roi-calculator .reach-roi-num-input {
+  width: 100%;
+  font-family: var(--rrc-font);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--rrc-text-primary);
+  background: var(--rrc-surface);
+  border: 1px solid var(--rrc-border);
+  border-radius: var(--rrc-radius-sm);
+  padding: 12px 14px;
+  box-sizing: border-box;
+  -moz-appearance: textfield;
+}
+.reach-roi-calculator .reach-roi-num-input::-webkit-outer-spin-button,
+.reach-roi-calculator .reach-roi-num-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+/* Placeholder text color across all inputs */
+.reach-roi-calculator .reach-roi-num-input::placeholder,
+.reach-roi-calculator .reach-roi-form-input::placeholder {
+  color: #d4d1c8;
+  opacity: 1; /* Firefox lowers placeholder opacity by default */
+}
+.reach-roi-calculator .reach-roi-num-input:focus {
+  outline: none;
+  border-color: var(--rrc-text-primary);
+  box-shadow: 0 0 0 3px var(--rrc-accent-soft);
+}
+.reach-roi-calculator .reach-roi-num-input--prefixed { padding-left: 26px; }
+.reach-roi-calculator .reach-roi-num-prefix {
+  position: absolute;
+  left: 14px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--rrc-text-secondary);
+  pointer-events: none;
+}
+.reach-roi-calculator .reach-roi-num-suffix {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--rrc-text-tertiary);
+  white-space: nowrap;
+}
+.reach-roi-calculator .reach-roi-num-input--sm {
+  width: 84px;
+  font-size: 14px;
+  padding: 7px 10px;
+}
+
+.reach-roi-calculator .reach-roi-field-error {
+  color: #C0554E;
+  font-size: 12.5px;
+  font-weight: 600;
+  margin: 8px 0 0;
+}
+
+/* -- Task cards: description + reduction badge ----------------------------- */
+.reach-roi-calculator .reach-roi-task-desc {
+  display: block;
+  font-size: 12.5px;
+  color: var(--rrc-text-secondary);
+  line-height: 1.4;
+  margin-top: 2px;
+}
+.reach-roi-calculator .reach-roi-task-reduction {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #1F9E6E;
+  background: var(--rrc-green-soft);
+  border-radius: 999px;
+  padding: 3px 9px;
+  margin-right: 10px;
+}
+
+/* -- Customize panel ------------------------------------------------------- */
+.reach-roi-calculator .reach-roi-task-customize {
+  flex-basis: 100%;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rrc-border-soft);
+}
+.reach-roi-calculator .reach-roi-customize-toggle {
+  font-family: var(--rrc-font);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--rrc-text-primary);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.reach-roi-calculator .reach-roi-customize-panel {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+.reach-roi-calculator .reach-roi-customize-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--rrc-text-secondary);
+  margin-bottom: 8px;
+}
+.reach-roi-calculator .reach-roi-customize-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.reach-roi-calculator .reach-roi-customize-suffix {
+  font-size: 12.5px;
+  color: var(--rrc-text-tertiary);
+}
+.reach-roi-calculator .reach-roi-radio-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.reach-roi-calculator .reach-roi-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  color: var(--rrc-text-primary);
+  cursor: pointer;
+}
+.reach-roi-calculator .reach-roi-radio input { accent-color: var(--rrc-ink); }
+
+/* -- Results head + capacity warning + tasks-included --------------------- */
+.reach-roi-calculator .reach-roi-results-head { margin-bottom: 20px; }
+.reach-roi-calculator .reach-roi-results-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--rrc-text-primary);
+  margin: 0 0 8px;
+  letter-spacing: -0.01em;
+}
+.reach-roi-calculator .reach-roi-results-sub {
+  font-size: 14px;
+  color: var(--rrc-text-secondary);
+  margin: 0;
+  line-height: 1.5;
+  max-width: 760px;
+}
+.reach-roi-calculator .reach-roi-warning {
+  background: var(--rrc-orange-soft);
+  border: 1px solid var(--rrc-orange);
+  color: #9A5A1E;
+  border-radius: var(--rrc-radius-md);
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+  margin-bottom: 18px;
+}
+.reach-roi-calculator .reach-roi-tasks-included {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--rrc-text-secondary);
+  margin: -4px 0 16px;
+}
+
+/* -- Three-metric grid: uses the base .reach-roi-summary-grid 3-col layout -- */
+
+/* -- Task-result source sub-label (retained for the sales version) --------- */
+.reach-roi-calculator .reach-roi-task-result-src {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--rrc-text-tertiary);
+  margin-top: 2px;
+}
+
+/* -- Methodology card ------------------------------------------------------ */
+.reach-roi-calculator .reach-roi-method-card .reach-roi-method-text {
+  font-size: 13px;
+  color: var(--rrc-text-secondary);
+  line-height: 1.55;
+  margin: 0 0 10px;
+}
+.reach-roi-calculator .reach-roi-method-card .reach-roi-method-text:last-child { margin-bottom: 0; }
+
+/* Honeypot: kept in the layout but off-screen. display:none is skipped by some
+   bots, which is exactly the ones worth catching. */
+.reach-roi-hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* Marketing consent row: checkbox in a fixed narrow column, text taking the
+   rest. `flex-direction` is set explicitly because .reach-roi-form-field, which
+   this element also carries, lays its children out as a column. */
+.reach-roi-calculator .reach-roi-consent {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.reach-roi-calculator .reach-roi-consent-input {
+  flex: 0 0 16px;   /* never grow, never shrink, never wrap under the text */
+  width: 16px;
+  height: 16px;
+  margin: 2px 0 0;  /* nudge onto the first line of the label */
+  accent-color: var(--rrc-ink);
+  cursor: pointer;
+}
+
+.reach-roi-calculator .reach-roi-consent-label {
+  flex: 1 1 auto;
+  min-width: 0;     /* lets long text wrap instead of forcing the row wider */
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--rrc-text-secondary);
+  cursor: pointer;
+}

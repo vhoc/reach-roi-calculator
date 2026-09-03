@@ -1,0 +1,69 @@
+{
+  "totalHours": 6854.4,
+  "totalDollars": 543738.4615384615,
+  "equivalentFTECapacity": 3.295384615384615,
+  "weightedReductionRate": 0.7933333333333333,
+  "includedCount": 4,
+  "perTask": [
+    {
+      "id": "security-controls-review",
+      "included": true,
+      "hoursAvoidable": 2880,
+      "dollarsAvoidable": 228461.53846153847
+    },
+    {
+      "id": "visibility-gap-identification",
+      "included": false,
+      "hoursAvoidable": 1872,
+      "dollarsAvoidable": 148500
+    },
+    {
+      "id": "config-remediation-deployment",
+      "included": false,
+      "hoursAvoidable": 1296,
+      "dollarsAvoidable": 102807.69230769231
+    },
+    {
+      "id": "tools-rationalization-assessment",
+      "included": false,
+      "hoursAvoidable": 1152,
+      "dollarsAvoidable": 91384.61538461539
+    },
+    {
+      "id": "executive-reporting-metrics",
+      "included": false,
+      "hoursAvoidable": 1440,
+      "dollarsAvoidable": 114230.76923076923
+    },
+    {
+      "id": "prioritization-security-work",
+      "included": false,
+      "hoursAvoidable": 1008,
+      "dollarsAvoidable": 79961.53846153847
+    },
+    {
+      "id": "endpoint-health",
+      "included": true,
+      "hoursAvoidable": 1008,
+      "dollarsAvoidable": 79961.53846153847
+    },
+    {
+      "id": "network-security-health",
+      "included": true,
+      "hoursAvoidable": 1238.4,
+      "dollarsAvoidable": 98238.46153846155
+    },
+    {
+      "id": "compliance-audit-readiness",
+      "included": true,
+      "hoursAvoidable": 1728,
+      "dollarsAvoidable": 137076.9230769231
+    },
+    {
+      "id": "attack-modeling-threat-actor-mapping",
+      "included": false,
+      "hoursAvoidable": 1296,
+      "dollarsAvoidable": 102807.69230769231
+    }
+  ]
+}

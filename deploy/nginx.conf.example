@@ -1,0 +1,70 @@
+# Reach Value Assessment — nginx site.
+#
+# Install this as HTTP-only, then run:
+#
+#     sudo certbot --nginx -d calculator.reach.security
+#
+# certbot rewrites this file in place: it adds `listen 443 ssl` plus the
+# ssl_certificate lines to the block below, and generates a second server block
+# on port 80 that redirects to HTTPS. Everything here — the headers, the rate
+# limit, the proxy — carries over into the TLS block untouched.
+#
+# Static files come from dist/; /api/lead proxies to the Node service. nginx
+# owns TLS, security headers and rate limiting: they belong at the edge, not in
+# application code, and they apply even if the Node service is down.
+
+# Rate limit keyed on client IP. 5 requests/minute with a small burst is far
+# above what a human filling in one form needs, and far below what makes a
+# spam run worthwhile.
+limit_req_zone $binary_remote_addr zone=lead_submit:10m rate=5r/m;
+
+server {
+    listen 80;
+    listen [::]:80;
+
+    # Must match the subdomain exactly — certbot finds this block by name.
+    server_name calculator.reach.security;
+
+    root /srv/reach-calculator/dist;
+    index index.html;
+
+    # Leads carry names, work emails, employer, and the company's headcount and
+    # average salary. All of it is PII or commercially sensitive.
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), interest-cohort=()" always;
+
+    # The page is linked from Webflow, never framed by it. If that changes,
+    # swap 'none' for the specific origin rather than removing the header.
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; object-src 'none'" always;
+
+    # Vite fingerprints asset filenames, so they can be cached indefinitely.
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files $uri =404;
+    }
+
+    location = /index.html {
+        add_header Cache-Control "no-cache";
+    }
+
+    location /api/lead {
+        limit_req zone=lead_submit burst=3 nodelay;
+        limit_req_status 429;
+
+        proxy_pass http://127.0.0.1:8787;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # A lead POST is small; anything larger is not a lead.
+        client_max_body_size 16k;
+        proxy_read_timeout 15s;
+    }
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}
