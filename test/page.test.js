@@ -30,6 +30,10 @@ const check = (id) => {
 };
 
 describe("calculator page", () => {
+  it("has no inline styles, which the production CSP (style-src 'self') blocks", () => {
+    expect(html).not.toMatch(/<style|\sstyle=/);
+  });
+
   it("offers every country as a select option, behind a placeholder", () => {
     const options = document.querySelectorAll("#rrc-f-country option");
     expect(options).toHaveLength(243);                // 242 countries + placeholder
@@ -60,6 +64,24 @@ describe("calculator page", () => {
     expect(
       $('[data-rrc-task-reduction="security-controls-review"]').classList.contains("reach-roi-is-hidden"),
     ).toBe(false);
+  });
+
+  it("Select All ticks every task, and unticking any task clears it", () => {
+    const all = $("#rrc-select-all");
+    const toggle = (el, on) => {
+      el.checked = on;
+      el.dispatchEvent(new Event("change"));
+    };
+    toggle(all, true);
+    expect(document.querySelectorAll("[data-rrc-task-toggle]:checked")).toHaveLength(10);
+
+    toggle($('[data-rrc-task-toggle="security-controls-review"]'), false);
+    expect(all.checked).toBe(false);
+    expect(document.querySelectorAll("[data-rrc-task-toggle]:checked")).toHaveLength(9);
+
+    // Restore the single-task selection the later tests expect.
+    toggle(all, false);
+    check("security-controls-review");
   });
 
   it("blocks submission and shows errors until the inputs are valid", () => {

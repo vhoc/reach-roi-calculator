@@ -1,4 +1,6 @@
 /** Bootstrap and DOM wiring for the Reach Value Assessment calculator. */
+// Self-hosted: the CSP (font-src/style-src 'self') blocks Google Fonts.
+import "@fontsource-variable/inter";
 import "./styles.css";
 import { TASK_BENCHMARKS } from "./benchmarks.js";
 import { calculateResults, generateSummary, hasCapacityWarning } from "./calc.js";
@@ -26,12 +28,31 @@ function initCalculator(root) {
     el?.addEventListener("input", () => hideError(root, el === els.headcount ? "headcount" : "salary"));
   }
 
+  const taskToggle = (id) => root.querySelector(`[data-rrc-task-toggle="${id}"]`);
+  // "Select All" is on exactly when every task is, so unticking any task clears it.
+  const syncSelectAll = () => {
+    const all = TASK_BENCHMARKS.every((b) => taskToggle(b.id)?.checked);
+    if (els.selectAll) els.selectAll.checked = all;
+    els.selectAllRow?.classList.toggle("reach-roi-is-active-task", all);
+  };
+
   for (const b of TASK_BENCHMARKS) {
-    root.querySelector(`[data-rrc-task-toggle="${b.id}"]`)?.addEventListener("change", () => {
+    taskToggle(b.id)?.addEventListener("change", () => {
       updateTaskRowState(root, b.id);
+      syncSelectAll();
       hideError(root, "tasks");
     });
   }
+
+  els.selectAll?.addEventListener("change", () => {
+    for (const b of TASK_BENCHMARKS) {
+      const toggle = taskToggle(b.id);
+      if (toggle) toggle.checked = els.selectAll.checked;
+      updateTaskRowState(root, b.id);
+    }
+    syncSelectAll();
+    hideError(root, "tasks");
+  });
 
   els.submitBtn?.addEventListener("click", () => {
     if (!validateInputs(root, els)) return;
@@ -61,6 +82,7 @@ function initCalculator(root) {
   els.formSubmit?.addEventListener("click", () => handleFormSubmit(root, els));
 
   for (const b of TASK_BENCHMARKS) updateTaskRowState(root, b.id);
+  syncSelectAll();
 }
 
 /**
@@ -131,6 +153,8 @@ function collectElements(root) {
     headcount: q("#rrc-headcount"),
     salary: q("#rrc-salary"),
     taskList: q("#rrc-task-list"),
+    selectAll: q("#rrc-select-all"),
+    selectAllRow: q("#rrc-select-all-row"),
     submitBtn: q("#rrc-submit-btn"),
     downloadBtn: q("#rrc-download-btn"),
     viewInputs: q("#rrc-view-inputs"),

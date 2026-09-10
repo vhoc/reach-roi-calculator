@@ -7,6 +7,19 @@
    they're easy to retune without hunting through the file.
    ========================================================================== */
 
+/* The standalone page shell (index.html's <body>). A class, not a style=
+   attribute, because the production CSP (style-src 'self') blocks inline styles. */
+.reach-roi-page {
+  margin: 0;
+  background: #04070d;
+  padding: 32px 16px;
+}
+
+/* Form controls don't inherit font-family by default. */
+.reach-roi-calculator :is(button, input, select, textarea) {
+  font-family: inherit;
+}
+
 .reach-roi-calculator {
   /* -- Color tokens (Reach light / monochromatic brand) --------------- */
   --rrc-bg: #FAF9F5;              /* warm off-white page background */
@@ -42,9 +55,9 @@
   --rrc-radius-lg: 18px;
   --rrc-radius-md: 14px;
   --rrc-radius-sm: 10px;
-  --rrc-font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    Helvetica, Arial, sans-serif;
-  --rrc-font-mono: "Inter", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --rrc-font: "Inter Variable", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, Helvetica, Arial, sans-serif;
+  --rrc-font-mono: "Inter Variable", "Inter", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
   font-family: var(--rrc-font);
   color: var(--rrc-text-primary);
@@ -413,6 +426,11 @@
   line-height: 1.45;
 }
 
+/* Section intro paragraph directly under a card title */
+.reach-roi-calculator .reach-roi-help--intro {
+  margin: -6px 0 18px;
+}
+
 /* Typical/median value hint shown next to Section A inputs */
 .reach-roi-calculator .reach-roi-typical {
   display: inline-block;
@@ -581,6 +599,10 @@
   margin: 0 0 6px;
 }
 
+.reach-roi-calculator .reach-roi-total-label--spaced {
+  margin-top: 14px;
+}
+
 .reach-roi-calculator .reach-roi-total-value {
   font-size: clamp(32px, 4.2vw, 44px);
   font-weight: 700;
@@ -635,6 +657,11 @@
 .reach-roi-calculator .reach-roi-task-row.reach-roi-is-active-task {
   border-color: var(--rrc-green);
   background: var(--rrc-green-soft);
+}
+
+/* "Select All Tasks" sits above the list, set slightly apart from it */
+.reach-roi-calculator .reach-roi-task-row--all {
+  margin-bottom: 18px;
 }
 
 @media (max-width: 620px) {
@@ -779,9 +806,9 @@
   text-align: right;
 }
 
-.reach-roi-calculator .reach-roi-task-result-num--dollar {
-  color: var(--rrc-accent-strong);
-  font-weight: 600;
+/* Salary-Equivalent Value column, header included */
+.reach-roi-calculator .reach-roi-task-result-row > :last-child {
+  font-weight: 700;
 }
 
 @media (max-width: 620px) {
