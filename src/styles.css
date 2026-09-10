@@ -11,8 +11,8 @@
    attribute, because the production CSP (style-src 'self') blocks inline styles. */
 .reach-roi-page {
   margin: 0;
-  background: #04070d;
-  padding: 32px 16px;
+  background: #FFFFFF;
+  padding: 16px;
 }
 
 /* Form controls don't inherit font-family by default. */
@@ -191,7 +191,7 @@
 
 .reach-roi-calculator .reach-roi-title {
   font-size: clamp(28px, 3.6vw, 42px);
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1.1;
   margin: 0 0 14px;
@@ -373,7 +373,7 @@
 
 .reach-roi-calculator .reach-roi-card-title {
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: 0.02em;
   text-transform: uppercase;
   color: var(--rrc-text-secondary);
@@ -1105,7 +1105,7 @@
 
 .reach-roi-calculator .reach-roi-modal-title {
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--rrc-text-primary);
   margin: 0 0 8px;
 }
@@ -1347,7 +1347,7 @@
 .reach-roi-calculator .reach-roi-results-head { margin-bottom: 20px; }
 .reach-roi-calculator .reach-roi-results-title {
   font-size: 26px;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--rrc-text-primary);
   margin: 0 0 8px;
   letter-spacing: -0.01em;
