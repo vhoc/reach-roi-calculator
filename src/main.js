@@ -365,16 +365,13 @@ async function handleFormSubmit(root, els) {
   renderResults(root, els);
   showView(root, els, "results");
 
-  // Delivery and the report run in parallel — the visitor gets their PDF
-  // whatever the network does. A failure surfaces without blocking anything.
-  const delivery = submitLead(lead, last.state, last.results);
-  downloadReport(root, els);
-
-  const result = await delivery;
+  // The report is not tied to delivery: it downloads only when the visitor
+  // presses the download button, whatever the network does here.
+  const result = await submitLead(lead, last.state, last.results);
   updateFormSubmitState(els);
   if (!result.ok) {
     console.warn("lead submission failed:", result.error);
-    showFormError(els, "We could not record your details. Your report has still downloaded.");
+    showFormError(els, "We could not record your details. You can still download your report.");
   }
 }
 

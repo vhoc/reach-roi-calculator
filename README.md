@@ -277,7 +277,10 @@ sudo nginx -t && sudo systemctl reload nginx
 ```
 
 At this point the site should answer over plain HTTP — check before going further,
-because certbot validates by serving a challenge from this very block:
+because certbot validates by serving a challenge from this very block. Check with
+`curl`, **not a browser**: `reach.security` sends HSTS with `includeSubDomains`, so a
+browser silently upgrades the subdomain to HTTPS and reports it unreachable until the
+certificate exists.
 
 ```sh
 curl -sI http://assessment.reach.security | head -1        # 200
@@ -322,7 +325,7 @@ curl -sI http://assessment.reach.security | head -1             # 301
 ```
 
 Then in a browser: open the subdomain, fill the calculator, submit the form. Confirm
-the PDF downloads, `pm2 logs` shows `lead delivered:` with the posted fields, and the
+**Download Personalized Report** saves the PDF, `pm2 logs` shows `lead delivered:` with the posted fields, and the
 Prospect appears in Pardot.
 
 > The form writes to the client's **live CRM**. Use a taggable address such as
@@ -362,6 +365,7 @@ difference by hand — copying the file over would drop the TLS lines.
 | Symptom                       | Cause                                                                                                                    |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | 404 on every path             | nginx is serving the site but `dist/` was never built — `pnpm build` in `/srv/reach-calculator` (step 5)                 |
+| Browser: unreachable, `curl http://` works | The apex's HSTS `includeSubDomains` forces HTTPS; run certbot (step 7)                                    |
 | `vite: not found` on build    | Dependencies installed with `--prod`; run `pnpm install --frozen-lockfile`                                               |
 | 502 from `/api/lead`          | Node is down — `pm2 status`, `pm2 logs reach-calculator`                                                                 |
 | `not_configured` in the logs  | `PARDOT_FORM_HANDLER_URL` empty; check `.env` is where `node_args` points                                                |

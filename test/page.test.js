@@ -169,6 +169,7 @@ describe("calculator page", () => {
     }
     expect($("#rrc-form-submit").disabled).toBe(false);
     $("#rrc-f-optin").checked = true;
+    vi.stubGlobal("URL", Object.assign(URL, { createObjectURL: vi.fn(() => "blob:x"), revokeObjectURL: vi.fn() }));
     $("#rrc-form-submit").click();
     await vi.waitFor(() => expect(fetch).toHaveBeenCalled());
 
@@ -178,6 +179,12 @@ describe("calculator page", () => {
     expect($("#rrc-out-hours").textContent).toBe("2,400");
     expect($("#rrc-out-fte").textContent).toBe("1.2 FTEs");
     expect($("#rrc-tasks-included").textContent).toBe("1 task included in this assessment");
+  });
+
+  it("downloads the report only from the download button", async () => {
+    expect(URL.createObjectURL).not.toHaveBeenCalled();
+    $("#rrc-download-btn").click();
+    await vi.waitFor(() => expect(URL.createObjectURL).toHaveBeenCalledOnce());
   });
 
   it("posts the lead and its assessment to the API", () => {

@@ -109,10 +109,10 @@ are observed customer figures — treat them as constants, do not average or "im
 them. Weighted reduction is hours-weighted, never a mean of the per-activity
 percentages.
 
-**Flow.** Inputs → validate → lead modal → results. On modal submit the Salesforce
-POST and the PDF run **in parallel**: neither gates the other, so the visitor gets
-their report whatever the network does, and a delivery failure surfaces as a message
-without withholding anything.
+**Flow.** Inputs → validate → lead modal → results. Modal submit sends the
+Salesforce POST and reveals the results; the PDF is generated **only** when the
+visitor presses *Download Personalized Report*. Delivery never gates the report, so
+a delivery failure surfaces as a message without withholding anything.
 
 **PDF** ([src/pdf.js](src/pdf.js)) — jsPDF plus jspdf-autotable, `import()`ed on
 demand so the 474 kB chunk never loads for visitors who don't download. It replaced
