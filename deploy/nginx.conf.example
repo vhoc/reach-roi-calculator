@@ -2,7 +2,7 @@
 #
 # Install this as HTTP-only, then run:
 #
-#     sudo certbot --nginx -d calculator.reach.security
+#     sudo certbot --nginx -d assessment.reach.security
 #
 # certbot rewrites this file in place: it adds `listen 443 ssl` plus the
 # ssl_certificate lines to the block below, and generates a second server block
@@ -23,7 +23,7 @@ server {
     listen [::]:80;
 
     # Must match the subdomain exactly — certbot finds this block by name.
-    server_name calculator.reach.security;
+    server_name assessment.reach.security;
 
     root /srv/reach-calculator/dist;
     index index.html;
@@ -39,15 +39,23 @@ server {
     # swap 'none' for the specific origin rather than removing the header.
     add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; object-src 'none'" always;
 
+    # No add_header inside these locations: any add_header in a location drops
+    # every one inherited from the server block, CSP and HSTS included. `expires`
+    # sets Cache-Control without that side effect.
+
     # Vite fingerprints asset filenames, so they can be cached indefinitely.
     location /assets/ {
         expires 1y;
-        add_header Cache-Control "public, immutable";
         try_files $uri =404;
     }
 
+    # `/` reaches this block through `index`, so it serves the page itself.
     location = /index.html {
-        add_header Cache-Control "no-cache";
+        expires epoch;    # Cache-Control: no-cache
+    }
+
+    location = /api/health {
+        proxy_pass http://127.0.0.1:8787;
     }
 
     location /api/lead {

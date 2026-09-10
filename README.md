@@ -73,12 +73,12 @@ the logs, but recreating the TLS and nginx setup by hand is an afternoon.
 
 ## 2. Subdomain
 
-Ask the client for a subdomain, e.g. `calculator.reach.security`, and have whoever
+Ask the client for a subdomain, e.g. `assessment.reach.security`, and have whoever
 controls DNS for `reach.security` add **one record**:
 
 | Type | Name         | Value                   | TTL |
 | ---- | ------------ | ----------------------- | --- |
-| A    | `calculator` | the Lightsail static IP | 300 |
+| A    | `assessment` | the Lightsail static IP | 300 |
 
 Add an `AAAA` record to the instance's IPv6 address only if you enabled IPv6.
 
@@ -90,7 +90,7 @@ until everything works, then raise it.
 if DNS has not caught up, issuance fails and repeated attempts hit rate limits:
 
 ```sh
-dig +short calculator.reach.security      # must print the static IP
+dig +short assessment.reach.security      # must print the static IP
 ```
 
 ---
@@ -276,13 +276,13 @@ At this point the site should answer over plain HTTP — check before going furt
 because certbot validates by serving a challenge from this very block:
 
 ```sh
-curl -sI http://calculator.reach.security | head -1        # 200
+curl -sI http://assessment.reach.security | head -1        # 200
 ```
 
 Now issue the certificate:
 
 ```sh
-sudo certbot --nginx -d calculator.reach.security \
+sudo certbot --nginx -d assessment.reach.security \
   --agree-tos -m ops@reach.security --no-eff-email --redirect
 ```
 
@@ -311,10 +311,10 @@ a 5 requests/minute per-IP limit on `/api/lead`. See
 ## 8. Verify
 
 ```sh
-curl -sI https://calculator.reach.security | head -1            # 200
-curl -s  https://calculator.reach.security/api/health           # {"ok":true}
-curl -sI https://calculator.reach.security | grep -i strict-transport
-curl -sI http://calculator.reach.security | head -1             # 301
+curl -sI https://assessment.reach.security | head -1            # 200
+curl -s  https://assessment.reach.security/api/health           # {"ok":true}
+curl -sI https://assessment.reach.security | grep -i strict-transport
+curl -sI http://assessment.reach.security | head -1             # 301
 ```
 
 Then in a browser: open the subdomain, fill the calculator, submit the form. Confirm
@@ -355,6 +355,7 @@ immediately.
 
 | Symptom                       | Cause                                                                                                                    |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| 404 on every path             | nginx is serving the site but `/srv/reach-calculator/dist/index.html` is missing — re-run the `dist/` rsync from step 5 |
 | 502 from `/api/lead`          | Node is down — `pm2 status`, `pm2 logs reach-calculator`                                                                 |
 | `not_configured` in the logs  | `PARDOT_FORM_HANDLER_URL` empty; check `.env` is where `node_args` points                                                |
 | 429 on submit                 | nginx rate limit; expected under load testing, not for real visitors                                                     |
