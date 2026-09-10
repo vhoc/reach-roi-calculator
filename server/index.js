@@ -75,7 +75,10 @@ async function verifyCaptcha(token, ip) {
 }
 
 // Only listen when run directly, so tests can exercise app.request() instead.
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+// PM2's fork mode runs its own container as argv[1] and exposes the real
+// script as pm_exec_path — without it the service stays "online" and never listens.
+const entry = process.env.pm_exec_path ?? process.argv[1];
+if (entry && import.meta.url === pathToFileURL(entry).href) {
   const port = Number(process.env.PORT ?? 8787);
   // State the mode at boot: a typo in either variable name would otherwise
   // disable CAPTCHA silently, and nothing downstream would ever say so.
