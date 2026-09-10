@@ -46,7 +46,7 @@ downloads — only the lead POST fails, and Vite prints which command is missing
 index.html            page shell — the entry Vite builds from
 vite.config.js        aliases, asset handling, the /api dev + preview proxies
 package.json          "type": "module"; scripts above
-pnpm-workspace.yaml   empty build-script allowlist (see Conventions)
+pnpm-workspace.yaml   build scripts denied via allowBuilds (see Conventions)
 .env.example          server-side config template -> copy to .env
 
 src/
@@ -263,5 +263,8 @@ to the Node service on loopback. The production `.env` lives at
 - Benchmark constants, disclaimer copy and methodology text are business-approved. Do
   not reword them casually; the methodology paragraph appears in both the results card
   and the PDF and must stay in sync.
-- `pnpm-workspace.yaml` declares an empty build-script allowlist. Leave it: no
-  dependency here needs install scripts, and that keeps one supply-chain foothold shut.
+- `pnpm-workspace.yaml` denies build scripts via `allowBuilds` (`core-js: false`).
+  Leave it: no dependency here needs install scripts, and that keeps one
+  supply-chain foothold shut. pnpm 11+ fails `--frozen-lockfile` on any dependency
+  with a build script that isn't listed there, so a new one must be added as `false`.
+  Production pnpm must match `packageManager` in package.json.

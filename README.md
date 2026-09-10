@@ -131,7 +131,7 @@ node -v          # must be >= v20.6
 
 ```sh
 sudo corepack enable
-corepack prepare pnpm@latest --activate
+corepack prepare pnpm@11.24.0 --activate   # match "packageManager" in package.json
 pnpm -v
 ```
 
