@@ -267,4 +267,6 @@ to the Node service on loopback. The production `.env` lives at
   Leave it: no dependency here needs install scripts, and that keeps one
   supply-chain foothold shut. pnpm 11+ fails `--frozen-lockfile` on any dependency
   with a build script that isn't listed there, so a new one must be added as `false`.
-  Production pnpm must match `packageManager` in package.json.
+  pnpm 12 also records the `packageManager` pin in `pnpm-lock.yaml`
+  (`packageManagerDependencies`), and a frozen install fails if the two disagree —
+  change the pin with `pnpm self-update <version>`, never by hand-editing package.json.
