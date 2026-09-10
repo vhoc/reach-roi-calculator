@@ -40,6 +40,8 @@ describe("PDF report", () => {
     expect(head).toMatch(/^%PDF-1\./);
     expect(bytes.length).toBeGreaterThan(10_000);
     expect(Buffer.from(bytes).toString("latin1")).toContain("/Count 2");
+    // Opens at 100% zoom rather than the viewer's default.
+    expect(Buffer.from(bytes).toString("latin1")).toMatch(/\/OpenAction \[\d+ 0 R \/XYZ null null 1(\.0+)?\]/);
 
     writeFileSync("/tmp/report-after.pdf", Buffer.from(bytes)); // for eyeballing
   });

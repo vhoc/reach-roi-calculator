@@ -37,6 +37,10 @@ const C = {
 
 export function buildReportPDF(lead, state, results) {
   const doc = new jsPDF({ unit: "pt", format: "letter", compress: true });
+  // Open at 100%. jsPDF otherwise writes a fit-width OpenAction, which blows
+  // Letter up past 200% on a wide screen. "original" = /XYZ null null 1.
+  // Acrobat honours it; some browser viewers apply their own default regardless.
+  doc.setDisplayMode("original");
   const included = results.perTask.filter((t) => t.included);
 
   titlePage(doc, lead, results);
