@@ -23,8 +23,9 @@ It binds to loopback only — nginx is the sole route in.
 - Region: closest to the client's buyers; it only affects latency.
 - Blueprint: **OS Only → Debian**. Pick **Debian 13 (trixie)** if it is offered;
   otherwise Debian 12 is fine (see the note below).
-- Plan: the smallest is enough. This serves static files and makes one outbound POST
-  per lead; 512 MB–1 GB RAM is comfortable.
+- Plan: small. At runtime it serves static files and makes one outbound POST per
+  lead, but every release is also built on the box — pick 1 GB RAM so the Vite build
+  has headroom.
 - Name it something you will recognise in a year, e.g. `reach-calculator`.
 
 > **Which Debian?** Debian 13 has full security-team support until August 2028.
@@ -149,6 +150,25 @@ sudo mkdir -p /srv/reach-calculator /var/log/reach-calculator
 sudo chown -R admin:admin /srv/reach-calculator /var/log/reach-calculator
 ```
 
+**Repository access.** The server clones and builds the app itself. Give it a
+read-only deploy key rather than your own GitHub credentials:
+
+```sh
+ssh-keygen -t ed25519 -N '' -f ~/.ssh/id_ed25519 -C reach-calculator-deploy
+cat ~/.ssh/id_ed25519.pub
+```
+
+Add that key on GitHub → the repository → Settings → Deploy keys, **without** write
+access. Then clone into the application directory, which must still be empty — the
+`.env` comes in the next step:
+
+```sh
+git clone git@github.com:vhoc/reach-roi-calculator.git /srv/reach-calculator
+```
+
+The first connection asks you to confirm GitHub's host key; check it against the
+fingerprints GitHub publishes.
+
 ---
 
 ## 4. Configuration
@@ -184,36 +204,19 @@ chmod 600 /srv/reach-calculator/.env
 
 ## 5. First deploy
 
-Build locally, then copy up. Nothing is built on the server.
-
-```sh
-# On your machine
-pnpm install --frozen-lockfile
-pnpm test
-pnpm build
-
-rsync -a --delete dist/    admin@<static-ip>:/srv/reach-calculator/dist/
-rsync -a --delete --exclude stub-handler.js \
-                  server/  admin@<static-ip>:/srv/reach-calculator/server/
-# The server imports src/lead-schema.js, which imports src/countries.js. Sync
-# the whole tree minus the browser art rather than naming files: a new shared
-# module would otherwise be missed and the service would fail to boot.
-rsync -a --delete --exclude assets/ \
-         src/     admin@<static-ip>:/srv/reach-calculator/src/
-rsync -a package.json pnpm-lock.yaml pnpm-workspace.yaml ecosystem.config.cjs \
-         admin@<static-ip>:/srv/reach-calculator/
-```
-
-> **Never run `rsync --delete` against `/srv/reach-calculator/` itself.** `.env`
-> belongs to no source tree, so rsync would delete it and the service would restart
-> answering 502 `not_configured`. Deletion is scoped to `dist/` and `server/`.
-
-Then on the server:
+Build on the server, from the checkout:
 
 ```sh
 cd /srv/reach-calculator
-pnpm install --prod --frozen-lockfile     # hono, @hono/node-server, zod only
+pnpm install --frozen-lockfile     # not --prod: the build needs Vite, a dev dependency
+pnpm test
+pnpm build                         # -> dist/, which nginx serves
 ```
+
+`.env`, `dist/` and `node_modules/` are gitignored, so `git pull` never touches them.
+
+> **Never run `git clean -x` here.** It deletes ignored files, `.env` included, and
+> the service would restart answering 502 `not_configured`.
 
 ---
 
@@ -264,8 +267,9 @@ the TLS work.
 ```sh
 sudo apt install -y certbot python3-certbot-nginx
 
-sudo cp deploy/nginx.conf.example /etc/nginx/sites-available/reach-calculator
-sudo nano /etc/nginx/sites-available/reach-calculator     # set server_name
+sudo cp /srv/reach-calculator/deploy/nginx.conf.example \
+        /etc/nginx/sites-available/reach-calculator
+sudo nano /etc/nginx/sites-available/reach-calculator     # check server_name
 sudo ln -s /etc/nginx/sites-available/reach-calculator /etc/nginx/sites-enabled/
 sudo rm -f /etc/nginx/sites-enabled/default
 
@@ -332,30 +336,33 @@ Webflow campaign context arrives only if the link carries it.
 
 ## Subsequent releases
 
-```sh
-# Locally
-pnpm install --frozen-lockfile && pnpm test && pnpm build
-rsync -a --delete dist/ admin@<static-ip>:/srv/reach-calculator/dist/
-rsync -a --delete --exclude stub-handler.js \
-                  server/ admin@<static-ip>:/srv/reach-calculator/server/
-rsync -a --delete --exclude assets/ src/ admin@<static-ip>:/srv/reach-calculator/src/
-rsync -a package.json pnpm-lock.yaml pnpm-workspace.yaml ecosystem.config.cjs \
-         admin@<static-ip>:/srv/reach-calculator/
+Push to `main` first — the server deploys whatever is there. Then:
 
-# On the server
+```sh
 ssh admin@<static-ip> 'cd /srv/reach-calculator \
-  && pnpm install --prod --frozen-lockfile \
+  && git pull --ff-only \
+  && pnpm install --frozen-lockfile \
+  && pnpm test && pnpm build \
   && pm2 reload reach-calculator'
 ```
 
-A front-end-only change needs just the `dist/` sync — no restart, nginx picks it up
-immediately.
+`--ff-only` refuses instead of merging if the checkout has diverged, which means
+someone edited files on the server — find out why before overriding it.
+
+`pnpm build` empties `dist/` before writing, so a build that fails partway leaves the
+page down. The tests run first to make that unlikely; if it happens, roll back to the
+previous release with `git reset --hard HEAD@{1} && pnpm build` and fix forward.
+
+**`git pull` does not update nginx.** The site config was copied into `/etc/nginx`
+and certbot has edited it since. When `deploy/nginx.conf.example` changes, apply the
+difference by hand — copying the file over would drop the TLS lines.
 
 ## Troubleshooting
 
 | Symptom                       | Cause                                                                                                                    |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| 404 on every path             | nginx is serving the site but `/srv/reach-calculator/dist/index.html` is missing — re-run the `dist/` rsync from step 5 |
+| 404 on every path             | nginx is serving the site but `dist/` was never built — `pnpm build` in `/srv/reach-calculator` (step 5)                 |
+| `vite: not found` on build    | Dependencies installed with `--prod`; run `pnpm install --frozen-lockfile`                                               |
 | 502 from `/api/lead`          | Node is down — `pm2 status`, `pm2 logs reach-calculator`                                                                 |
 | `not_configured` in the logs  | `PARDOT_FORM_HANDLER_URL` empty; check `.env` is where `node_args` points                                                |
 | 429 on submit                 | nginx rate limit; expected under load testing, not for real visitors                                                     |

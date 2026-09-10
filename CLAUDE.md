@@ -248,9 +248,11 @@ way: an inline `<script>` or `style=` attribute would force the policy open.
 
 ## Deployment
 
-See [README.md](README.md) for the full Lightsail/Debian/PM2 setup. In short:
-`pnpm build`, rsync `dist/`, `server/`, `src/lead-schema.js` and the manifests, then
-`pm2 reload reach-calculator`. nginx serves the static build and proxies `/api/lead`
+See [README.md](README.md) for the full Lightsail/Debian/PM2 setup. In short: the
+server holds a git checkout at `/srv/reach-calculator` (read-only deploy key) and
+builds there — push to `main`, then on the server `git pull --ff-only`,
+`pnpm install --frozen-lockfile` (dev deps included; Vite does the build),
+`pnpm test && pnpm build`, `pm2 reload reach-calculator`. nginx serves the static build and proxies `/api/lead`
 to the Node service on loopback. The production `.env` lives at
 `/srv/reach-calculator/.env` and is never deployed from here.
 
