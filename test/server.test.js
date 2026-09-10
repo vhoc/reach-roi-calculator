@@ -6,8 +6,8 @@ const validLead = {
   lastName: "Lovelace",
   email: "ada@example.com",
   company: "Example Corp",
-  country: "United Kingdom",
-  state: "Greater London",
+  country: "United States",
+  state: "California",
   optIn: true,
   assessment: {
     teamHeadcount: 10,
@@ -61,8 +61,8 @@ describe("POST /api/lead", () => {
     expect(sent.get("lname")).toBe("Lovelace");
     expect(sent.get("fname")).toBe("Ada");
     expect(sent.get("email")).toBe("ada@example.com");
-    expect(sent.get("Country")).toBe("United Kingdom");
-    expect(sent.get("State")).toBe("Greater London");
+    expect(sent.get("Country")).toBe("United States");
+    expect(sent.get("State")).toBe("California");
     expect(sent.get("Opt-in")).toBe("true");
     expect(sent.has("oid")).toBe(false);
   });

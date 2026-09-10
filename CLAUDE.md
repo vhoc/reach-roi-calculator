@@ -60,6 +60,8 @@ src/
   lead.js             reads the form, POSTs to /api/lead
   lead-request.js     builds the request body (pure, no deps)
   lead-schema.js      zod schema — shared by the server and the tests
+  countries.js        the Country values the handler accepts (browser + server)
+  states.js           State/Province options, scoped by country
   empty.js            deliberate no-op; see the note below
   styles.css          all styles, scoped under .reach-roi-calculator
   assets/             brand art (4 PNGs) and the PDF logo
@@ -176,9 +178,23 @@ the client on 2026-09-02:
 | `lastName` | `lname` |
 | `email` | `email` — Pardot keys Prospects on this |
 | `company` | `company` |
-| `country` | `Country` |
-| `state` | `State` — optional; omitted entirely when blank |
+| `country` | `Country` — must be a value from [src/countries.js](src/countries.js) |
+| `state` | `State` — optional; a validated picklist scoped to `country` |
 | `optIn` | `Opt-in` — **required by the handler**, so always sent as `"true"`/`"false"` |
+
+Salesforce validates **State against the chosen country** and flags the Prospect with
+a *Field Integrity Exception* on a mismatch — which a free-text State field produced.
+[src/states.js](src/states.js) covers the United States and Canada; for every other
+country the field is hidden and no State is sent, which is valid because the handler
+does not require it. Switching country clears a state left over from the previous
+one. `leadSchema` re-checks the pair server-side.
+
+Pardot validates `Country` against its own allowed values and treats anything else
+as empty — which, on a required field, means the submission is rejected and no
+Prospect is created. `src/countries.js` holds that list verbatim; the browser renders
+it into the country `<select>`, which cannot hold anything else, and the server
+re-checks against it because a direct POST never touches that element. Do not "tidy" those strings: `Viet Nam` and `Hong Kong S.A.R., China` look
+wrong and are not.
 
 Names are **case-sensitive on the wire**: `country` would be silently dropped where
 `Country` is accepted. Empty values are skipped rather than posted, so a blank never

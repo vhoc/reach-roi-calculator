@@ -1407,3 +1407,21 @@
   color: var(--rrc-text-secondary);
   cursor: pointer;
 }
+
+/* The country select. Shares .reach-roi-form-input for border, padding and
+   focus ring; these are the properties a select needs on top. */
+.reach-roi-calculator .reach-roi-form-select {
+  appearance: none;
+  cursor: pointer;
+  padding-right: 34px;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='none' stroke='%236B6A64' stroke-width='1.6' d='M1 1.5 6 6.5l5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+
+/* Submit button while the lead form is incomplete. The field-level markers and
+   messages say what is missing; this only stops a doomed submission. */
+.reach-roi-calculator .reach-roi-form-submit:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

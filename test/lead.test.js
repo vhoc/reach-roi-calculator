@@ -8,8 +8,8 @@ const lead = {
   lastName: "Lovelace",
   email: "ada@example.com",
   company: "Example Corp",
-  country: "United Kingdom",
-  state: "Greater London",
+  country: "United States",
+  state: "California",
   optIn: true,
 };
 const calcState = { teamHeadcount: 10, annualSalary: 208000 };
@@ -26,6 +26,23 @@ const results = {
 describe("lead schema", () => {
   it("accepts a complete lead", () => {
     expect(leadSchema.safeParse(buildLeadRequest(lead, calcState, results)).success).toBe(true);
+  });
+
+  it("rejects a state that is not valid for the chosen country", () => {
+    // Salesforce raises a Field Integrity Exception on the Prospect otherwise.
+    expect(leadSchema.safeParse({ ...lead, state: "Greater London" }).success).toBe(false);
+    expect(leadSchema.safeParse({ ...lead, country: "France", state: "California" }).success).toBe(false);
+    // A country with no validated list is fine as long as no state is sent.
+    expect(leadSchema.safeParse({ ...lead, country: "France", state: "" }).success).toBe(true);
+  });
+
+  it("rejects a country outside the handler's accepted list", () => {
+    // Pardot treats an unrecognised value as empty, so this would be rejected
+    // as a missing required field — with no Prospect and no explanation.
+    expect(leadSchema.safeParse({ ...lead, country: "Freedonia" }).success).toBe(false);
+    expect(leadSchema.safeParse({ ...lead, country: "united kingdom" }).success).toBe(false);
+    // State must be cleared too: California is not valid for the UK.
+    expect(leadSchema.safeParse({ ...lead, country: "United Kingdom", state: "" }).success).toBe(true);
   });
 
   it("rejects a missing name, a bad email, and an over-long field", () => {
@@ -58,8 +75,8 @@ describe("Pardot Form Handler mapping", () => {
     expect(f.email).toBe("ada@example.com"); // Pardot keys prospects on this
     expect(f.company).toBe("Example Corp");
     // Capital C and S — form field names are case-sensitive on the wire.
-    expect(f.Country).toBe("United Kingdom");
-    expect(f.State).toBe("Greater London");
+    expect(f.Country).toBe("United States");
+    expect(f.State).toBe("California");
   });
 
   it("does not send the names the handler does not have", () => {

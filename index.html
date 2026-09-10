@@ -217,11 +217,15 @@
         </div>
         <div class="reach-roi-form-field">
           <label class="reach-roi-form-label" for="rrc-f-country">Country<span class="reach-roi-req">*</span></label>
-          <input type="text" id="rrc-f-country" class="reach-roi-form-input" autocomplete="country-name" maxlength="80" required />
+          <select id="rrc-f-country" class="reach-roi-form-input reach-roi-form-select" autocomplete="country-name" required>
+            <!-- options rendered from countries.js -->
+          </select>
         </div>
-        <div class="reach-roi-form-field">
-          <label class="reach-roi-form-label" for="rrc-f-state">State / Region</label>
-          <input type="text" id="rrc-f-state" class="reach-roi-form-input" autocomplete="address-level1" maxlength="80" />
+        <div class="reach-roi-form-field reach-roi-is-hidden" id="rrc-state-field">
+          <label class="reach-roi-form-label" for="rrc-f-state">State / Province</label>
+          <select id="rrc-f-state" class="reach-roi-form-input reach-roi-form-select" autocomplete="address-level1">
+            <!-- options rendered from states.js, scoped to the chosen country -->
+          </select>
         </div>
         <div class="reach-roi-form-field reach-roi-consent">
           <input type="checkbox" id="rrc-f-optin" class="reach-roi-consent-input" />

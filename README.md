@@ -195,7 +195,11 @@ pnpm build
 rsync -a --delete dist/    admin@<static-ip>:/srv/reach-calculator/dist/
 rsync -a --delete --exclude stub-handler.js \
                   server/  admin@<static-ip>:/srv/reach-calculator/server/
-rsync -a src/lead-schema.js  admin@<static-ip>:/srv/reach-calculator/src/
+# The server imports src/lead-schema.js, which imports src/countries.js. Sync
+# the whole tree minus the browser art rather than naming files: a new shared
+# module would otherwise be missed and the service would fail to boot.
+rsync -a --delete --exclude assets/ \
+         src/     admin@<static-ip>:/srv/reach-calculator/src/
 rsync -a package.json pnpm-lock.yaml pnpm-workspace.yaml ecosystem.config.cjs \
          admin@<static-ip>:/srv/reach-calculator/
 ```
@@ -334,7 +338,7 @@ pnpm install --frozen-lockfile && pnpm test && pnpm build
 rsync -a --delete dist/ admin@<static-ip>:/srv/reach-calculator/dist/
 rsync -a --delete --exclude stub-handler.js \
                   server/ admin@<static-ip>:/srv/reach-calculator/server/
-rsync -a src/lead-schema.js admin@<static-ip>:/srv/reach-calculator/src/
+rsync -a --delete --exclude assets/ src/ admin@<static-ip>:/srv/reach-calculator/src/
 rsync -a package.json pnpm-lock.yaml pnpm-workspace.yaml ecosystem.config.cjs \
          admin@<static-ip>:/srv/reach-calculator/
 

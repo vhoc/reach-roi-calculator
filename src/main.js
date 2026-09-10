@@ -2,6 +2,8 @@
 import "./styles.css";
 import { TASK_BENCHMARKS } from "./benchmarks.js";
 import { calculateResults, generateSummary, hasCapacityWarning } from "./calc.js";
+import { COUNTRIES } from "./countries.js";
+import { statesFor } from "./states.js";
 import { animateDonut, renderDonut } from "./donut.js";
 import { formatCurrency, formatNumber, formatPercent } from "./format.js";
 import { submitLead } from "./lead.js";
@@ -17,6 +19,8 @@ function initCalculator(root) {
   const els = collectElements(root);
 
   renderTaskRows(els.taskList);
+  renderCountryOptions(els.formCountry);
+  renderStateOptions(els);
 
   for (const el of [els.headcount, els.salary]) {
     el?.addEventListener("input", () => hideError(root, el === els.headcount ? "headcount" : "salary"));
@@ -45,9 +49,79 @@ function initCalculator(root) {
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && !els.modalOverlay?.classList.contains("reach-roi-is-hidden")) closeModal(els);
   });
+  // Keep the modal's submit button in step with the fields.
+  for (const field of leadFields(els)) {
+    field?.addEventListener("input", () => updateFormSubmitState(els));
+    field?.addEventListener("change", () => updateFormSubmitState(els));
+  }
+  // The valid states depend on the country, so the field follows it.
+  els.formCountry?.addEventListener("change", () => renderStateOptions(els));
+  updateFormSubmitState(els);
+
   els.formSubmit?.addEventListener("click", () => handleFormSubmit(root, els));
 
   for (const b of TASK_BENCHMARKS) updateTaskRowState(root, b.id);
+}
+
+/**
+ * Fills the country select.
+ *
+ * A select cannot hold a value that is not on the list, which is what Pardot
+ * requires — so no client-side country validation is needed beyond "something
+ * is chosen". The server still re-checks, since a direct POST never touches
+ * this element.
+ */
+function renderCountryOptions(select) {
+  if (!select) return;
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "Select a country";
+
+  select.replaceChildren(
+    placeholder,
+    ...COUNTRIES.map((name) => {
+      const option = document.createElement("option");
+      option.value = name;
+      option.textContent = name;
+      return option;
+    }),
+  );
+}
+
+/**
+ * Rebuilds the State select for the chosen country, and hides the field for
+ * countries with no validated list.
+ *
+ * Salesforce rejects a State it does not recognise for that country with a
+ * Field Integrity Exception, so offering a free-text or wrongly-scoped value is
+ * worse than offering none: State is optional on the handler.
+ */
+function renderStateOptions(els) {
+  const select = els.formState;
+  if (!select) return;
+
+  const states = statesFor(els.formCountry?.value);
+  els.stateField?.classList.toggle("reach-roi-is-hidden", states.length === 0);
+
+  if (states.length === 0) {
+    select.replaceChildren();
+    select.value = "";     // never submit a state left over from another country
+    return;
+  }
+
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "Select a state / province";
+
+  select.replaceChildren(
+    placeholder,
+    ...states.map((name) => {
+      const option = document.createElement("option");
+      option.value = name;
+      option.textContent = name;
+      return option;
+    }),
+  );
 }
 
 function collectElements(root) {
@@ -83,6 +157,7 @@ function collectElements(root) {
     formCompany: q("#rrc-f-company"),
     formCountry: q("#rrc-f-country"),
     formState: q("#rrc-f-state"),
+    stateField: q("#rrc-state-field"),
     formOptIn: q("#rrc-f-optin"),
     formWebsite: q("#rrc-f-website"),
     formError: q("#rrc-form-error"),
@@ -217,9 +292,44 @@ function renderIncludedTasks(container, results) {
 
 /* ------------------------------------------------------------- lead + PDF */
 
+// Declarations, not const arrows: initCalculator runs at module load and calls
+// these, which a const would put in the temporal dead zone.
+function leadFields(els) {
+  return [
+    els.formFirst,
+    els.formLast,
+    els.formEmail,
+    els.formCompany,
+    els.formCountry,
+    els.formState,
+    els.formOptIn,
+  ];
+}
+
+/**
+ * Whether the modal is ready to submit. Country counts as filled once it
+ * matches the list case-insensitively, so the button enables while the visitor
+ * types rather than waiting for the field to be left and snapped.
+ */
+function isLeadFormValid(els) {
+  return Boolean(
+    els.formFirst?.value.trim() &&
+      els.formLast?.value.trim() &&
+      els.formCompany?.value.trim() &&
+      isValidEmail(els.formEmail?.value.trim() ?? "") &&
+      els.formCountry?.value,
+  );
+}
+
+/** Gates the submit button. State and the consent box are not required. */
+function updateFormSubmitState(els) {
+  if (els.formSubmit) els.formSubmit.disabled = !isLeadFormValid(els);
+}
+
 const openModal = (els) => {
   els.modalOverlay?.classList.remove("reach-roi-is-hidden");
   els.formError?.classList.add("reach-roi-is-hidden");
+  updateFormSubmitState(els);
   els.formFirst?.focus();
 };
 const closeModal = (els) => els.modalOverlay?.classList.add("reach-roi-is-hidden");
@@ -230,7 +340,7 @@ async function handleFormSubmit(root, els) {
     lastName: els.formLast.value.trim(),
     email: els.formEmail.value.trim(),
     company: els.formCompany.value.trim(),
-    country: els.formCountry.value.trim(),
+    country: els.formCountry.value,
     state: els.formState.value.trim(),
     // Not in `required`: consent bundled into access is not freely given.
     optIn: els.formOptIn?.checked ?? false,
@@ -240,6 +350,11 @@ async function handleFormSubmit(root, els) {
   const required = ["firstName", "lastName", "email", "company", "country"];
   if (required.some((k) => !candidate[k]) || !isValidEmail(candidate.email)) {
     return showFormError(els, "Please complete all required fields with a valid work email.");
+  }
+  // Pardot validates Country against its own list and treats anything else as
+  // empty, which would reject the submission. Catch it here instead.
+  if (!COUNTRIES.includes(candidate.country)) {
+    return showFormError(els, "Please choose a country from the list.");
   }
   els.formError?.classList.add("reach-roi-is-hidden");
 
@@ -256,7 +371,7 @@ async function handleFormSubmit(root, els) {
   downloadReport(root, els);
 
   const result = await delivery;
-  els.formSubmit.disabled = false;
+  updateFormSubmitState(els);
   if (!result.ok) {
     console.warn("lead submission failed:", result.error);
     showFormError(els, "We could not record your details. Your report has still downloaded.");
@@ -270,7 +385,9 @@ function showFormError(els, message) {
 }
 
 // Cheap shape check for instant feedback; lead-schema.js is the real validator.
-const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
+}
 
 async function downloadReport(root, els) {
   if (!lead) return openModal(els);

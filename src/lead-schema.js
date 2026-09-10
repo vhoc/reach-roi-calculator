@@ -6,6 +6,8 @@
  * One schema, so the two can never drift apart.
  */
 import { z } from "zod";
+import { COUNTRIES } from "./countries.js";
+import { statesFor } from "./states.js";
 
 const trimmed = (max) => z.string().trim().min(1).max(max);
 
@@ -14,9 +16,11 @@ export const leadSchema = z.object({
   lastName: trimmed(80),
   email: z.email().max(80),
   company: trimmed(255),
-  country: trimmed(80),
-  // Optional: much of the world has no state or region, and the Form Handler
-  // does not require it. An empty one is skipped rather than posted blank.
+  // Must be one of the handler's accepted values — see countries.js.
+  country: z.string().trim().refine((v) => COUNTRIES.includes(v), {
+    message: "country must be one of the Form Handler's accepted values",
+  }),
+  // Optional, and validated against the chosen country below.
   state: z.string().trim().max(80).optional().default(""),
 
   // Marketing consent. Optional to give — the report is never withheld for it —
@@ -64,4 +68,15 @@ export const leadSchema = z.object({
     .optional(),
 
   captchaToken: z.string().max(4000).optional(),
+}).superRefine((lead, ctx) => {
+  // Salesforce validates State against the country and raises a Field
+  // Integrity Exception otherwise, so a mismatched pair must not be delivered.
+  if (!lead.state) return;
+  if (!statesFor(lead.country).includes(lead.state)) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["state"],
+      message: `"${lead.state}" is not a valid state or province for ${lead.country}`,
+    });
+  }
 });
