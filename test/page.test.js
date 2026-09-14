@@ -13,7 +13,10 @@ import { beforeAll, describe, expect, it, vi } from "vitest";
 const html = readFileSync(resolve(process.cwd(), "index.html"), "utf8");
 
 beforeAll(async () => {
-  document.documentElement.innerHTML = html.slice(html.indexOf("<body"), html.indexOf("</body>"));
+  // A scripting browser never renders <noscript>; happy-dom would fetch GTM's iframe from it.
+  document.documentElement.innerHTML = html
+    .slice(html.indexOf("<body"), html.indexOf("</body>"))
+    .replace(/<noscript>[\s\S]*?<\/noscript>/, "");
   vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ ok: true }), { status: 200 })));
   await import("../src/main.js");
 });
@@ -32,6 +35,12 @@ const check = (id) => {
 describe("calculator page", () => {
   it("has no inline styles, which the production CSP (style-src 'self') blocks", () => {
     expect(html).not.toMatch(/<style|\sstyle=/);
+  });
+
+  it("loads GTM from a file, which the production CSP (script-src without 'unsafe-inline') requires", () => {
+    expect(html).not.toMatch(/<script(?![^>]*\ssrc=)/);
+    expect(html).toContain('<script src="/gtm.js"></script>');
+    expect(html).toContain("ns.html?id=GTM-58NDHDPL");
   });
 
   it("offers every country as a select option, behind a placeholder", () => {
