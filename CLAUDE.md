@@ -66,6 +66,9 @@ src/
   styles.css          all styles, scoped under .reach-roi-calculator
   assets/             brand art (4 PNGs) and the PDF logo
 
+public/
+  gtm.js              Google Tag Manager bootstrap (GTM-58NDHDPL), kept out of index.html for the CSP
+
 server/
   index.js            Hono app: validate, honeypot, CAPTCHA, deliver
   pardot.js           Form Handler field mapping and delivery
@@ -245,6 +248,16 @@ check is therefore repeated on the server. The defences and where they live:
 
 A strict CSP is possible because the page has no inline script or style. Keep it that
 way: an inline `<script>` or `style=` attribute would force the policy open.
+
+**Google Tag Manager.** The client's GTM snippet is split: the bootstrap is
+[public/gtm.js](public/gtm.js) and the noscript iframe uses `hidden` in place of its
+inline style. The CSP's third-party hosts are exactly what the container loads
+(GA4, Google Ads, LinkedIn Insight, HubSpot), found by loading the page in Chrome
+under the policy. When the client adds a tag in GTM, repeat that and add its hosts.
+Two things stay blocked on purpose: regional Google domains (`google.com.mx`, and so
+on), used only for Ads audiences, and GTM **Custom HTML** tags, which need
+`'unsafe-inline'`. The one Custom HTML tag in the container today tracks
+HubSpot/Webflow form submissions, and this page has neither.
 
 ## Deployment
 

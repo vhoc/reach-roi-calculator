@@ -37,7 +37,13 @@ server {
 
     # The page is linked from Webflow, never framed by it. If that changes,
     # swap 'none' for the specific origin rather than removing the header.
-    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; object-src 'none'" always;
+    # Third-party hosts are what the GTM container (GTM-58NDHDPL) loads, observed
+    # in Chrome: GA4 + Google Ads (googletagmanager, google-analytics, google.com,
+    # doubleclick), LinkedIn Insight (licdn, linkedin) and HubSpot (hs-*, hubspot,
+    # hubapi). A tag added in GTM later needs its hosts added here too, and
+    # "Custom HTML" tags need inline script, which this policy still refuses.
+    # upgrade-insecure-requests: the HubSpot tag is configured as http://.
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' https://*.googletagmanager.com https://googleads.g.doubleclick.net https://snap.licdn.com https://*.hs-scripts.com https://*.hs-analytics.net https://*.hs-banner.com https://*.hsadspixel.net; style-src 'self'; img-src 'self' data: https://*.google-analytics.com https://*.googletagmanager.com https://www.google.com https://*.doubleclick.net https://*.linkedin.com https://*.hubspot.com; connect-src 'self' https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://*.googletagmanager.com https://www.google.com https://*.doubleclick.net https://px.ads.linkedin.com https://*.hubapi.com https://*.hubspot.com; frame-src https://www.googletagmanager.com; font-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests" always;
 
     # No add_header inside these locations: any add_header in a location drops
     # every one inherited from the server block, CSP and HSTS included. `expires`
