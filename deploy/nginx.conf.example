@@ -40,10 +40,14 @@ server {
     # Third-party hosts are what the GTM container (GTM-58NDHDPL) loads, observed
     # in Chrome: GA4 + Google Ads (googletagmanager, google-analytics, google.com,
     # doubleclick), LinkedIn Insight (licdn, linkedin) and HubSpot (hs-*, hubspot,
-    # hubapi). A tag added in GTM later needs its hosts added here too, and
-    # "Custom HTML" tags need inline script, which this policy still refuses.
+    # hubapi). A tag added in GTM later needs its hosts added here too.
+    # The sha256 in script-src allows one GTM "Custom HTML" tag (the HubSpot/
+    # Webflow form-submit tracker) byte-for-byte; if the client edits that tag,
+    # the browser error prints the new hash to put here. Other inline script
+    # stays refused. google.com.mx / google.ca are regional Google Ads audience
+    # pixels; add other country domains when the client targets them.
     # upgrade-insecure-requests: the HubSpot tag is configured as http://.
-    add_header Content-Security-Policy "default-src 'self'; script-src 'self' https://*.googletagmanager.com https://googleads.g.doubleclick.net https://snap.licdn.com https://*.hs-scripts.com https://*.hs-analytics.net https://*.hs-banner.com https://*.hsadspixel.net; style-src 'self'; img-src 'self' data: https://*.google-analytics.com https://*.googletagmanager.com https://www.google.com https://*.doubleclick.net https://*.linkedin.com https://*.hubspot.com; connect-src 'self' https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://*.googletagmanager.com https://www.google.com https://*.doubleclick.net https://px.ads.linkedin.com https://*.hubapi.com https://*.hubspot.com; frame-src https://www.googletagmanager.com; font-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'sha256-ph0DPpu972Z7Gaxviv7dFt5DAvatj85o1MccxYmpxzY=' https://*.googletagmanager.com https://googleads.g.doubleclick.net https://snap.licdn.com https://*.hs-scripts.com https://*.hs-analytics.net https://*.hs-banner.com https://*.hsadspixel.net; style-src 'self'; img-src 'self' data: https://*.google-analytics.com https://*.googletagmanager.com https://www.google.com https://www.google.com.mx https://www.google.ca https://*.doubleclick.net https://*.linkedin.com https://*.hubspot.com; connect-src 'self' https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://*.googletagmanager.com https://www.google.com https://*.doubleclick.net https://px.ads.linkedin.com https://*.hubapi.com https://*.hubspot.com; frame-src https://www.googletagmanager.com; font-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests" always;
 
     # No add_header inside these locations: any add_header in a location drops
     # every one inherited from the server block, CSP and HSTS included. `expires`
