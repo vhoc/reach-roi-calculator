@@ -3,17 +3,12 @@
 import "@fontsource-variable/inter";
 import "./styles.css";
 import { TASK_BENCHMARKS } from "./benchmarks.js";
-import { calculateResults, generateSummary, hasCapacityWarning } from "./calc.js";
+import { calculateResults } from "./calc.js";
 import { COUNTRIES } from "./countries.js";
 import { statesFor } from "./states.js";
-import { animateDonut, renderDonut } from "./donut.js";
-import { formatCurrency, formatNumber, formatPercent } from "./format.js";
+import { saveAssessment } from "./handoff.js";
 import { submitLead } from "./lead.js";
 import { renderTaskRows, updateTaskRowState } from "./tasks.js";
-
-/** Last computed state/results, shared by the results view and the report. */
-const last = { state: null, results: null };
-let lead = null;
 
 document.querySelectorAll(".reach-roi-calculator").forEach(initCalculator);
 
@@ -55,13 +50,8 @@ function initCalculator(root) {
   });
 
   els.submitBtn?.addEventListener("click", () => {
-    if (!validateInputs(root, els)) return;
-    if (!lead) return openModal(els);
-    renderResults(root, els);
-    showView(root, els, "results");
+    if (validateInputs(root, els)) openModal(els);
   });
-
-  els.downloadBtn?.addEventListener("click", () => downloadReport(root, els));
 
   els.modalClose?.addEventListener("click", () => closeModal(els));
   els.modalOverlay?.addEventListener("click", (e) => {
@@ -156,23 +146,6 @@ function collectElements(root) {
     selectAll: q("#rrc-select-all"),
     selectAllRow: q("#rrc-select-all-row"),
     submitBtn: q("#rrc-submit-btn"),
-    downloadBtn: q("#rrc-download-btn"),
-    viewInputs: q("#rrc-view-inputs"),
-    viewResults: q("#rrc-view-results"),
-    subtitleInputs: q("#rrc-subtitle-inputs"),
-    subtitleResults: q("#rrc-subtitle-results"),
-    capacityWarning: q("#rrc-capacity-warning"),
-    outValue: q("#rrc-out-value"),
-    outHours: q("#rrc-out-hours"),
-    outFte: q("#rrc-out-fte"),
-    tasksIncluded: q("#rrc-tasks-included"),
-    includedList: q("#rrc-included-list"),
-    summaryText: q("#rrc-summary-text"),
-    donut: q("#rrc-donut"),
-    donutSegments: q("#rrc-donut-segments"),
-    donutLegend: q("#rrc-donut-legend"),
-    donutCenter: q("#rrc-donut-center"),
-    donutTooltip: q("#rrc-donut-tooltip"),
     modalOverlay: q("#rrc-modal-overlay"),
     modalClose: q("#rrc-modal-close"),
     formFirst: q("#rrc-f-first"),
@@ -231,90 +204,7 @@ const showError = (root, key) =>
 const hideError = (root, key) =>
   root.querySelector(`[data-rrc-error="${key}"]`)?.classList.add("reach-roi-is-hidden");
 
-/* ------------------------------------------------------------------ views */
-
-function showView(root, els, viewName) {
-  const toResults = viewName === "results";
-  els.viewInputs?.classList.toggle("reach-roi-is-hidden", toResults);
-  els.viewResults?.classList.toggle("reach-roi-is-hidden", !toResults);
-  // Header subtitle: two-sentence version on inputs, short version on results.
-  els.subtitleInputs?.classList.toggle("reach-roi-is-hidden", toResults);
-  els.subtitleResults?.classList.toggle("reach-roi-is-hidden", !toResults);
-
-  const target = toResults ? els.viewResults : els.viewInputs;
-  target?.focus?.({ preventScroll: false });
-  if (toResults) animateDonut();
-  root.scrollIntoView?.({ behavior: "smooth", block: "start" });
-}
-
-function renderResults(root, els) {
-  const state = getState(root);
-  const results = calculateResults(state);
-  last.state = state;
-  last.results = results;
-
-  if (els.outValue) els.outValue.textContent = formatCurrency(results.totalDollars);
-  if (els.outHours) els.outHours.textContent = formatNumber(Math.round(results.totalHours));
-  if (els.outFte) els.outFte.textContent = `${formatNumber(results.equivalentFTECapacity, 1)} FTEs`;
-  if (els.tasksIncluded) {
-    const n = results.includedCount;
-    els.tasksIncluded.textContent = `${n} ${n === 1 ? "task" : "tasks"} included in this assessment`;
-  }
-  els.capacityWarning?.classList.toggle("reach-roi-is-hidden", !hasCapacityWarning(state));
-
-  renderIncludedTasks(els.includedList, results);
-  renderDonut(els, results);
-  if (els.summaryText) els.summaryText.textContent = generateSummary(state, results);
-}
-
-/** Task-level results table: Task | Reduction | Annual Hours | Value */
-function renderIncludedTasks(container, results) {
-  if (!container) return;
-  const included = results.perTask.filter((t) => t.included);
-
-  if (included.length === 0) {
-    const empty = document.createElement("p");
-    empty.className = "reach-roi-empty-tasks";
-    empty.textContent = "No tasks selected. Go back and select the activities your team handles.";
-    container.replaceChildren(empty);
-    return;
-  }
-
-  const cell = (className, text) => {
-    const span = document.createElement("span");
-    span.className = className;
-    span.textContent = text;
-    return span;
-  };
-  const makeRow = (className, values) => {
-    const row = document.createElement("div");
-    row.className = className;
-    row.append(
-      cell("reach-roi-task-result-name", values[0]),
-      ...values.slice(1).map((v) => cell("reach-roi-task-result-num", v)),
-    );
-    return row;
-  };
-
-  container.replaceChildren(
-    makeRow("reach-roi-task-result-row reach-roi-task-result-row--head", [
-      "Task",
-      "Reduction",
-      "Annual Hours Reclaimed",
-      "Salary-Equivalent Value",
-    ]),
-    ...included.map((t) =>
-      makeRow("reach-roi-task-result-row", [
-        t.name,
-        formatPercent(t.reductionRate),
-        `${formatNumber(Math.round(t.hoursAvoidable))} hrs`,
-        formatCurrency(t.dollarsAvoidable),
-      ]),
-    ),
-  );
-}
-
-/* ------------------------------------------------------------- lead + PDF */
+/* ----------------------------------------------------------------- lead */
 
 // Declarations, not const arrows: initCalculator runs at module load and calls
 // these, which a const would put in the temporal dead zone.
@@ -358,7 +248,7 @@ const openModal = (els) => {
 };
 const closeModal = (els) => els.modalOverlay?.classList.add("reach-roi-is-hidden");
 
-async function handleFormSubmit(root, els) {
+function handleFormSubmit(root, els) {
   const candidate = {
     firstName: els.formFirst.value.trim(),
     lastName: els.formLast.value.trim(),
@@ -382,21 +272,18 @@ async function handleFormSubmit(root, els) {
   }
   els.formError?.classList.add("reach-roi-is-hidden");
 
-  lead = candidate;
   els.formSubmit.disabled = true; // no double submissions
 
-  closeModal(els);
-  renderResults(root, els);
-  showView(root, els, "results");
+  const state = getState(root);
+  saveAssessment(candidate, state);
 
-  // The report is not tied to delivery: it downloads only when the visitor
-  // presses the download button, whatever the network does here.
-  const result = await submitLead(lead, last.state, last.results);
-  updateFormSubmitState(els);
-  if (!result.ok) {
-    console.warn("lead submission failed:", result.error);
-    showFormError(els, "We could not record your details. You can still download your report.");
-  }
+  // Fired, not awaited: `keepalive` carries the POST across the navigation, and
+  // delivery has never gated the visitor's results.
+  submitLead(candidate, state, calculateResults(state)).then((result) => {
+    if (!result.ok) console.warn("lead submission failed:", result.error);
+  });
+
+  window.location.assign("/thank-you");
 }
 
 function showFormError(els, message) {
@@ -408,26 +295,4 @@ function showFormError(els, message) {
 // Cheap shape check for instant feedback; lead-schema.js is the real validator.
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
-}
-
-async function downloadReport(root, els) {
-  if (!lead) return openModal(els);
-  if (!last.results) renderResults(root, els);
-
-  try {
-    // Loaded on demand: jsPDF is dead weight for visitors who never download.
-    const { buildReportPDF, reportFilename } = await import("./pdf.js");
-    const blob = buildReportPDF(lead, last.state, last.results);
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = reportFilename(lead.company);
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  } catch (err) {
-    console.error("report generation failed:", err);
-  }
 }

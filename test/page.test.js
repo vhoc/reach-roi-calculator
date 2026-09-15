@@ -2,7 +2,8 @@
  * @vitest-environment happy-dom
  *
  * End-to-end smoke test of the DOM wiring: the real index.html is loaded, the
- * modules boot against it, and a visitor's path is walked through to results.
+ * modules boot against it, and a visitor's path is walked through to the
+ * handoff. Rendering those results is thank-you.test.js's job.
  * This is what catches a selector that no longer matches after the refactor.
  */
 import { readFileSync } from "node:fs";
@@ -18,6 +19,8 @@ beforeAll(async () => {
     .slice(html.indexOf("<body"), html.indexOf("</body>"))
     .replace(/<noscript>[\s\S]*?<\/noscript>/, "");
   vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ ok: true }), { status: 200 })));
+  // The submit navigates to /thank-you; happy-dom would try to load it for real.
+  vi.stubGlobal("location", { assign: vi.fn(), search: "", href: "http://localhost/" });
   await import("../src/main.js");
 });
 
@@ -186,7 +189,7 @@ describe("calculator page", () => {
     expect($("#rrc-form-submit").disabled).toBe(false);
   });
 
-  it("submits the lead and shows the computed results", async () => {
+  it("hands the assessment to /thank-you and navigates there", async () => {
     for (const [sel, value] of [
       ["#rrc-f-first", "Ada"],
       ["#rrc-f-last", "Lovelace"],
@@ -200,22 +203,19 @@ describe("calculator page", () => {
     }
     expect($("#rrc-form-submit").disabled).toBe(false);
     $("#rrc-f-optin").checked = true;
-    vi.stubGlobal("URL", Object.assign(URL, { createObjectURL: vi.fn(() => "blob:x"), revokeObjectURL: vi.fn() }));
     $("#rrc-form-submit").click();
     await vi.waitFor(() => expect(fetch).toHaveBeenCalled());
 
-    expect($("#rrc-modal-overlay").classList.contains("reach-roi-is-hidden")).toBe(true);
-    expect($("#rrc-view-results").classList.contains("reach-roi-is-hidden")).toBe(false);
-    expect($("#rrc-out-value").textContent).toBe("$240,000");
-    expect($("#rrc-out-hours").textContent).toBe("2,400");
-    expect($("#rrc-out-fte").textContent).toBe("1.2 FTEs");
-    expect($("#rrc-tasks-included").textContent).toBe("1 task included in this assessment");
-  });
-
-  it("downloads the report only from the download button", async () => {
-    expect(URL.createObjectURL).not.toHaveBeenCalled();
-    $("#rrc-download-btn").click();
-    await vi.waitFor(() => expect(URL.createObjectURL).toHaveBeenCalledOnce());
+    // The modal stays up until the browser leaves: no flash of the empty form.
+    expect($("#rrc-modal-overlay").classList.contains("reach-roi-is-hidden")).toBe(false);
+    expect(location.assign).toHaveBeenCalledWith("/thank-you");
+    // The results page recomputes from this, so the inputs have to survive.
+    const { lead, state } = JSON.parse(sessionStorage.getItem("rrc-assessment"));
+    expect(lead.email).toBe("ada@example.com");
+    expect(lead.company).toBe("Example Corp");
+    expect(state.teamHeadcount).toBe(10);
+    expect(state.annualSalary).toBe(208000);
+    expect(state.tasks.filter((t) => t.included)).toHaveLength(1);
   });
 
   it("posts the lead and its assessment to the API", () => {
@@ -235,10 +235,5 @@ describe("calculator page", () => {
   it("leaves the consent box unticked by default", () => {
     // A pre-ticked box is not valid consent, and submission never depended on it.
     expect(document.querySelector("#rrc-f-optin").defaultChecked).toBe(false);
-  });
-
-  it("draws one donut segment per included activity", () => {
-    expect(document.querySelectorAll("#rrc-donut-segments circle")).toHaveLength(1);
-    expect(document.querySelectorAll("#rrc-donut-legend li")).toHaveLength(1);
   });
 });

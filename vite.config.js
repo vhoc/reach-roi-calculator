@@ -1,9 +1,10 @@
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 
-// Absolute path, not "/src/empty.js": dependency pre-bundling resolves aliases
+// Absolute paths, not "/src/empty.js": dependency pre-bundling resolves aliases
 // relative to the dependency's own directory, which breaks `vite dev`.
-const empty = fileURLToPath(new URL("./src/empty.js", import.meta.url));
+const here = (path) => fileURLToPath(new URL(path, import.meta.url));
+const empty = here("./src/empty.js");
 
 const LEAD_SERVER = "http://localhost:8787";
 
@@ -30,7 +31,25 @@ const apiProxy = () => ({
   },
 });
 
+/**
+ * nginx serves /thank-you from thank-you.html (`try_files $uri $uri.html`), so
+ * dev and preview have to resolve the extensionless route the same way — the
+ * form navigates to /thank-you, not /thank-you.html.
+ */
+const extensionlessHtml = () => {
+  // A braced body, not a concise one: returning middlewares.use() hands Vite
+  // the connect app as a post hook, which it then calls with no request.
+  const rewrite = (server) => {
+    server.middlewares.use((req, _res, next) => {
+      req.url = req.url.replace(/^\/thank-you(?=$|[?#])/, "/thank-you.html");
+      next();
+    });
+  };
+  return { name: "extensionless-html", configureServer: rewrite, configurePreviewServer: rewrite };
+};
+
 export default defineConfig({
+  plugins: [extensionlessHtml()],
   resolve: {
     // jsPDF lazily imports these for its .html() renderer, which this report
     // never uses. Stubbing them keeps ~226 kB of dead chunks out of dist/.
@@ -39,6 +58,8 @@ export default defineConfig({
   build: {
     // Brand art stays as files rather than being inlined back into the CSS.
     assetsInlineLimit: 4096,
+    // Two pages: the calculator and the results it navigates to.
+    rollupOptions: { input: { index: here("./index.html"), thankYou: here("./thank-you.html") } },
   },
   // Proxy /api to the lead server so the browser sees a single origin, exactly
   // as nginx presents it in production. `preview` needs its own copy — it does

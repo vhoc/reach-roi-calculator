@@ -365,6 +365,7 @@ difference by hand — copying the file over would drop the TLS lines.
 | Symptom                       | Cause                                                                                                                    |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | 404 on every path             | nginx is serving the site but `dist/` was never built — `pnpm build` in `/srv/reach-calculator` (step 5)                 |
+| 404 on `/thank-you` only      | The `location /` block is missing `$uri.html` in its `try_files` — apply that line from `deploy/nginx.conf.example`      |
 | Browser: unreachable, `curl http://` works | The apex's HSTS `includeSubDomains` forces HTTPS; run certbot (step 7)                                    |
 | `vite: not found` on build    | Dependencies installed with `--prod`; run `pnpm install --frozen-lockfile`                                               |
 | 502 from `/api/lead`          | Node is down — `pm2 status`, `pm2 logs reach-calculator`                                                                 |
